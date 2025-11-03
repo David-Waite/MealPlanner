@@ -1,0 +1,53 @@
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(9, 30, 66, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--color-bg);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Ensures border-radius applies to children */
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-4) var(--spacing-5);
+  background-color: var(--color-card-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.closeButton {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 var(--spacing-2);
+}
+
+.content {
+  padding: var(--spacing-5);
+  overflow-y: auto;
+  max-height: 70vh;
+}

@@ -1,0 +1,102 @@
+.card {
+  background-color: var(--color-card-bg);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 2px var(--color-card-shadow);
+  margin-bottom: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  cursor: pointer; /* <-- Updated from 'grab' to 'pointer' */
+  border: 2px solid transparent;
+
+  /* Stacking styles */
+  position: relative;
+  transition: transform 150ms ease, z-index 150ms ease;
+}
+.cardSelected {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3);
+}
+
+.card:hover {
+  /* Bring to front on hover */
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+/* Make stacked cards overlap */
+.card:not(:first-child) {
+  margin-top: -30px;
+}
+
+.cardImage {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.cardContent {
+  padding: var(--spacing-1) var(--spacing-2);
+  width: 100%;
+  min-width: 0; /* Fix for flex truncation */
+}
+
+.cardTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userAvatars {
+  display: flex;
+  margin-top: var(--spacing-1);
+}
+
+.miniAvatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 600;
+  border: 1px solid white;
+}
+
+/* Overlap mini avatars */
+.miniAvatar:not(:first-child) {
+  margin-left: -6px;
+}
+
+.removeButton {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0; /* Hidden by default */
+  transition: opacity 150ms ease;
+}
+
+.card:hover .removeButton {
+  opacity: 1; /* Show on card hover */
+}
+
+.removeButton:hover {
+  background-color: #d0021b; /* Danger color */
+}

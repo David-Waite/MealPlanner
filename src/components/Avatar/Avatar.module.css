@@ -1,0 +1,24 @@
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--avatar-bg, var(--color-text-secondary));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 150ms ease-in-out;
+}
+
+.avatar:hover {
+  opacity: 0.8;
+}
+
+.selected {
+  border-color: var(--avatar-bg, var(--color-text-secondary));
+  box-shadow: 0 0 0 3px white, 0 0 0 5px var(--avatar-bg);
+}

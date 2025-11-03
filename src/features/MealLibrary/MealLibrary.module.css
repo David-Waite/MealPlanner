@@ -1,0 +1,52 @@
+.mealCard {
+  position: relative;
+
+  background-color: var(--color-card-bg);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 3px var(--color-card-shadow);
+  cursor: grab;
+  transition: box-shadow 150ms ease;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* --- New Styles for Card Actions --- */
+.cardActions {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  display: flex;
+  gap: var(--spacing-1);
+  opacity: 0; /* Hide by default */
+  transition: opacity 150ms ease;
+  z-index: 2;
+}
+
+.mealCard:hover .cardActions {
+  opacity: 1; /* Show on hover */
+}
+
+.actionButton {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.actionButton:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.deleteButton:hover {
+  background-color: #d0021b;
+}
+
+.servingsComplete {
+  background-color: #a0f0c0;
+  color: #005221;
+}

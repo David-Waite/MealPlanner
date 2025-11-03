@@ -1,0 +1,30 @@
+/* Import variables so all CSS files can see them */
+@import "./variables.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* This is our 100vw/100vh lock */
+#root {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; /* No browser scrolling */
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
