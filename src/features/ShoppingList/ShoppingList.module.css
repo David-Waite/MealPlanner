@@ -2,6 +2,13 @@
   min-height: 300px;
 }
 
+.contentWrapper {
+  /* Wraps content and footer */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
 .placeholder {
   color: var(--color-text-secondary);
   font-size: 0.95rem;
@@ -33,28 +40,47 @@
   box-shadow: 0 1px 2px var(--color-card-shadow);
 }
 
+.accordion {
+  width: 100%;
+}
+
 .accordion summary {
   cursor: pointer;
   list-style: none; /* Hide default triangle */
+  width: 100%;
 }
 .accordion summary::-webkit-details-marker {
   display: none; /* Hide default triangle */
 }
 
 .itemSummary {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  /* Make 3 columns: Name, Date, Amount */
+  grid-template-columns: 1fr auto auto;
+  gap: var(--spacing-3);
   align-items: center;
   padding: var(--spacing-3) var(--spacing-4);
+  width: 100%;
 }
 
 .itemName {
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemDate {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .itemQuantity {
   font-weight: 600;
   color: #4a90e2;
+  white-space: nowrap;
+  text-align: right;
 }
 
 .itemDetails {
@@ -69,6 +95,40 @@
 .detailRow {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-3);
   font-size: 0.9rem;
   color: var(--color-text-secondary);
+}
+
+.checklistLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  /* Make it take up space, truncate if needed */
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.checklistLabel span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkbox {
+  flex-shrink: 0;
+}
+
+.detailAmount {
+  flex-shrink: 0; /* Don't let amount wrap */
+  padding-left: var(--spacing-2);
+  font-weight: 500;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
 }

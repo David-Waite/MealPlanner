@@ -32,10 +32,10 @@ const MOCK_INGREDIENTS: Ingredient[] = [
   {
     id: "ing_albacore_tuna_canned",
     name: "Canned Albacore Tuna",
-    category: "Canned Goods",
+    category: "Pantry",
   },
-  { id: "ing_cucumber", name: "Cucumber", category: "Vegetable" },
-  { id: "ing_cherry_tomatoes", name: "Cherry Tomatoes", category: "Vegetable" },
+  { id: "ing_cucumber", name: "Cucumber", category: "Produce" },
+  { id: "ing_cherry_tomatoes", name: "Cherry Tomatoes", category: "Produce" },
   {
     id: "ing_chopped_fresh_parsley",
     name: "Fresh Parsley",
@@ -60,11 +60,11 @@ const MOCK_INGREDIENTS: Ingredient[] = [
   {
     id: "ing_canned_black_beans",
     name: "Canned Black Beans",
-    category: "Canned Goods",
+    category: "Pantry",
   },
-  { id: "ing_corn", name: "Corn (Fresh or Frozen)", category: "Vegetable" },
-  { id: "ing_red_onion", name: "Red Onion", category: "Vegetable" },
-  { id: "ing_romaine_lettuce", name: "Romaine Lettuce", category: "Vegetable" },
+  { id: "ing_corn", name: "Corn (Fresh or Frozen)", category: "Produce" },
+  { id: "ing_red_onion", name: "Red Onion", category: "Produce" },
+  { id: "ing_romaine_lettuce", name: "Romaine Lettuce", category: "Produce" },
 
   // From Curry
   { id: "ing_yellow_onion", name: "Yellow Onion", category: "Produce" },
@@ -74,19 +74,19 @@ const MOCK_INGREDIENTS: Ingredient[] = [
   {
     id: "ing_canned_diced_tomatoes",
     name: "Canned Diced Tomatoes",
-    category: "Canned Goods",
+    category: "Pantry",
   },
   {
     id: "ing_canned_chickpeas",
     name: "Canned Chickpeas",
-    category: "Canned Goods",
+    category: "Pantry",
   },
   {
     id: "ing_canned_coconut_milk",
     name: "Canned Coconut Milk",
-    category: "Canned Goods",
+    category: "Pantry",
   },
-  { id: "ing_green_beans", name: "Green Beans", category: "Vegetable" },
+  { id: "ing_green_beans", name: "Green Beans", category: "Produce" },
 
   // From Gnocchi
   { id: "ing_gnocchi", name: "Shelf-Stable Gnocchi", category: "Pantry" },
@@ -97,7 +97,7 @@ const MOCK_INGREDIENTS: Ingredient[] = [
   },
   { id: "ing_heavy_cream", name: "Heavy Cream", category: "Dairy" },
   { id: "ing_parmesan_cheese", name: "Parmesan Cheese", category: "Dairy" },
-  { id: "ing_spinach", name: "Spinach", category: "Vegetable" },
+  { id: "ing_spinach", name: "Spinach", category: "Produce" },
   { id: "ing_fresh_basil", name: "Fresh Basil", category: "Produce" },
 
   // From Salmon
@@ -114,8 +114,8 @@ const MOCK_INGREDIENTS: Ingredient[] = [
   { id: "ing_pita_bread", name: "Pita Bread", category: "Pantry" },
 
   // From Sheet Pan
-  { id: "ing_broccoli", name: "Broccoli", category: "Vegetable" },
-  { id: "ing_baby_potatoes", name: "Baby Potatoes", category: "Vegetable" },
+  { id: "ing_broccoli", name: "Broccoli", category: "Produce" },
+  { id: "ing_baby_potatoes", name: "Baby Potatoes", category: "Produce" },
   { id: "ing_garlic_powder", name: "Garlic Powder", category: "Pantry" },
   { id: "ing_kielbasa_sausage", name: "Kielbasa Sausage", category: "Meat" },
 

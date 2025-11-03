@@ -1,30 +1,53 @@
-import React, { useMemo } from "react";
-import type { Ingredient, Meal, PlannedMeal, Unit } from "../../types";
+import React, { useMemo, useState } from "react"; // <-- Import useState
+import type {
+  Ingredient,
+  Meal,
+  PlannedMeal,
+  Unit,
+  IngredientCategory,
+} from "../../types";
+import { CATEGORY_ORDER } from "../../types";
 import { useAppState } from "../../context/hooks";
 import { Modal } from "../../components/Modal/Modal";
+import { Button } from "../../components/Button/Button"; // <-- Import Button
 import styles from "./ShoppingList.module.css";
 
+// --- Date Formatting Helper ---
+/**
+ * Formats an ISO date string (YYYY-MM-DD) to "Mon 14"
+ * @param isoDate The date string to format
+ */
+const formatDate = (isoDate: string): string => {
+  // Add T00:00:00 to ensure date is parsed in local time, not UTC
+  const date = new Date(isoDate + "T00:00:00");
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    day: "numeric",
+  });
+};
+
 // --- Type Definitions for Aggregated List ---
+interface AggregatedItemDetail {
+  date: string;
+  formattedDate: string;
+  amount: number;
+  mealName: string; // <-- ADDED THIS BACK
+}
 interface AggregatedItem {
   ingredientId: string;
   name: string;
-  category: string;
+  category: IngredientCategory;
   totalQuantity: number;
   unit: Unit;
-  // For the accordion breakdown
-  details: {
-    date: string;
-    mealName: string;
-    amount: number;
-  }[];
+  details: AggregatedItemDetail[];
 }
 
 type GroupedList = {
-  category: string;
+  category: IngredientCategory;
   items: AggregatedItem[];
 }[];
 
-// --- Aggregation Logic ---
+// --- Aggregation Logic (FOR UI) ---
 const generateShoppingList = (
   plan: PlannedMeal[],
   meals: Meal[],
@@ -35,35 +58,31 @@ const generateShoppingList = (
     return [];
   }
 
-  // 1. Filter plan by selected dates
   const filteredPlan = plan.filter((p) => selectedDates.includes(p.date));
-
-  // 2. Aggregate ingredients
   const aggMap = new Map<string, AggregatedItem>();
 
   for (const plannedMeal of filteredPlan) {
     const mealDetails = meals.find((m) => m.id === plannedMeal.mealId);
     if (!mealDetails) continue;
 
-    // Calculate proportional multiplier
     const multiplier = plannedMeal.assignedUsers.length / mealDetails.servings;
 
     for (const ingredient of mealDetails.ingredients) {
       const ingredientId = ingredient.ingredientId;
       const amountToAdd = ingredient.quantity * multiplier;
 
-      // Get master ingredient details
       const masterIng = allIngredients.find((i) => i.id === ingredientId);
       if (!masterIng) continue;
 
-      const detailEntry = {
+      // --- UPDATED: Detail entry now includes mealName ---
+      const detailEntry: AggregatedItemDetail = {
         date: plannedMeal.date,
-        mealName: mealDetails.name,
+        formattedDate: formatDate(plannedMeal.date),
         amount: amountToAdd,
+        mealName: mealDetails.name, // <-- ADDED THIS BACK
       };
 
       if (!aggMap.has(ingredientId)) {
-        // Add new item to map
         aggMap.set(ingredientId, {
           ingredientId: ingredientId,
           name: masterIng.name,
@@ -73,18 +92,29 @@ const generateShoppingList = (
           details: [detailEntry],
         });
       } else {
-        // Update existing item in map
         const existing = aggMap.get(ingredientId)!;
         existing.totalQuantity += amountToAdd;
-        existing.details.push(detailEntry);
-        // Note: This assumes units are consistent.
-        // A real app might need unit conversion!
+
+        // --- UPDATED LOGIC ---
+        // Check if an entry for this exact day AND meal already exists
+        const existingDetail = existing.details.find(
+          (d) => d.date === plannedMeal.date && d.mealName === mealDetails.name // <-- UPDATED CHECK
+        );
+
+        if (existingDetail) {
+          // It exists, just add to the amount
+          existingDetail.amount += amountToAdd;
+        } else {
+          // It doesn't exist, add a new detail entry
+          existing.details.push(detailEntry);
+        }
+        // --- END UPDATED LOGIC ---
       }
     }
   }
 
-  // 3. Group by category
-  const grouped = new Map<string, AggregatedItem[]>();
+  // Group by category
+  const grouped = new Map<IngredientCategory, AggregatedItem[]>();
   for (const item of aggMap.values()) {
     if (!grouped.has(item.category)) {
       grouped.set(item.category, []);
@@ -92,11 +122,60 @@ const generateShoppingList = (
     grouped.get(item.category)!.push(item);
   }
 
-  // 4. Convert to final array structure
-  return Array.from(grouped.entries()).map(([category, items]) => ({
+  // Convert to array and Sort by the defined CATEGORY_ORDER
+  const sortedGroups = Array.from(grouped.entries());
+
+  sortedGroups.sort(([catA], [catB]) => {
+    const indexA = CATEGORY_ORDER.indexOf(catA);
+    const indexB = CATEGORY_ORDER.indexOf(catB);
+    const finalIndexA = indexA === -1 ? Infinity : indexA;
+    const finalIndexB = indexB === -1 ? Infinity : indexB;
+    return finalIndexA - finalIndexB;
+  });
+
+  // Map to final structure
+  return sortedGroups.map(([category, items]) => ({
     category,
     items,
   }));
+};
+
+// --- UPDATED: Text Generation for Clipboard (now PLAIN TEXT) ---
+// This function will now RE-AGGREGATE the data to match the export format
+const generateNotesText = (list: GroupedList): string => {
+  let text = "";
+
+  for (const group of list) {
+    for (const item of group.items) {
+      // --- NEW: Re-aggregate logic ---
+      // 1. Create a temp map to aggregate by date ONLY
+      const dayMap = new Map<
+        string,
+        { formattedDate: string; totalAmount: number }
+      >();
+
+      for (const detail of item.details) {
+        if (!dayMap.has(detail.date)) {
+          dayMap.set(detail.date, {
+            formattedDate: detail.formattedDate,
+            totalAmount: 0,
+          });
+        }
+        dayMap.get(detail.date)!.totalAmount += detail.amount;
+      }
+      // --- End new logic ---
+
+      // 2. Loop over the new re-aggregated map
+      for (const data of dayMap.values()) {
+        // Format: amount unit item (date)
+        const line = `${data.totalAmount.toFixed(1)} ${item.unit} ${
+          item.name
+        } (${data.formattedDate})\n`; // Add newline
+        text += line;
+      }
+    }
+  }
+  return text.trim();
 };
 
 // --- The Component ---
@@ -110,54 +189,111 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
   onClose,
 }) => {
   const { plan, meals, ingredients, selectedDates } = useAppState();
+  const [copied, setCopied] = useState(false); // <-- NEW state for copy feedback
 
-  // Recalculate list only when data changes
   const shoppingList = useMemo(
     () => generateShoppingList(plan, meals, ingredients, selectedDates),
     [plan, meals, ingredients, selectedDates]
   );
 
+  // --- Copy to Clipboard Handler (Unchanged) ---
+  const handleCopyToClipboard = () => {
+    const textToCopy = generateNotesText(shoppingList);
+    if (!textToCopy) return;
+
+    // Use document.execCommand for iFrame compatibility
+    const textArea = document.createElement("textarea");
+    textArea.value = textToCopy;
+    textArea.style.position = "fixed";
+    textArea.style.top = "-9999px";
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand("copy");
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000); // Reset feedback after 2s
+      }
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+
+    document.body.removeChild(textArea);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Shopping List">
-      <div className={styles.container}>
-        {selectedDates.length === 0 && (
-          <p className={styles.placeholder}>
-            Select one or more days on the planner (use Shift+Click for
-            multiple) to generate a shopping list.
-          </p>
-        )}
-        {shoppingList.map((group) => (
-          <div key={group.category} className={styles.categoryGroup}>
-            <h3 className={styles.categoryTitle}>{group.category}</h3>
-            <ul className={styles.itemList}>
-              {group.items.map((item) => (
-                <li key={item.ingredientId} className={styles.item}>
-                  <details className={styles.accordion}>
-                    <summary className={styles.itemSummary}>
-                      <span className={styles.itemName}>{item.name}</span>
-                      <span className={styles.itemQuantity}>
-                        {/* Format to 1 decimal place */}
-                        {item.totalQuantity.toFixed(1)} {item.unit}
-                      </span>
-                    </summary>
-                    <div className={styles.itemDetails}>
-                      {item.details.map((d, index) => (
-                        <div key={index} className={styles.detailRow}>
-                          <span>
-                            {d.date} ({d.mealName})
+      <div className={styles.contentWrapper}>
+        <div className={styles.container}>
+          {selectedDates.length === 0 && (
+            <p className={styles.placeholder}>
+              Select one or more days on the planner (use Shift+Click for
+              multiple) to generate a shopping list.
+            </p>
+          )}
+          {shoppingList.map((group) => (
+            <div key={group.category} className={styles.categoryGroup}>
+              <h3 className={styles.categoryTitle}>{group.category}</h3>
+              <ul className={styles.itemList}>
+                {group.items.map((item) => {
+                  const isSingleInstance = item.details.length === 1;
+                  const title = isSingleInstance
+                    ? item.name
+                    : `${item.name} (x${item.details.length})`;
+                  const dateDisplay = isSingleInstance
+                    ? item.details[0].formattedDate
+                    : "";
+
+                  return (
+                    <li key={item.ingredientId} className={styles.item}>
+                      <details className={styles.accordion}>
+                        <summary className={styles.itemSummary}>
+                          <span className={styles.itemName}>{title}</span>
+                          <span className={styles.itemDate}>{dateDisplay}</span>
+                          <span className={styles.itemQuantity}>
+                            {item.totalQuantity.toFixed(1)} {item.unit}
                           </span>
-                          <span>
-                            {d.amount.toFixed(1)} {item.unit}
-                          </span>
+                        </summary>
+                        <div className={styles.itemDetails}>
+                          {item.details.map((d, index) => (
+                            <div key={index} className={styles.detailRow}>
+                              <label className={styles.checklistLabel}>
+                                <input
+                                  type="checkbox"
+                                  className={styles.checkbox}
+                                />
+                                {/* --- UPDATED: Added meal name --- */}
+                                <span>
+                                  {d.formattedDate} ({d.mealName})
+                                </span>
+                              </label>
+                              <span className={styles.detailAmount}>
+                                {d.amount.toFixed(1)} {item.unit}
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </details>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+                      </details>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* --- NEW: Footer with Copy Button --- */}
+      <div className={styles.footer}>
+        <Button
+          variant="secondary"
+          onClick={handleCopyToClipboard}
+          disabled={shoppingList.length === 0}
+        >
+          {copied ? "Copied!" : "Copy to Notes"}
+        </Button>
       </div>
     </Modal>
   );

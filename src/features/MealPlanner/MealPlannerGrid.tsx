@@ -6,7 +6,7 @@ import styles from "./MealPlannerGrid.module.css";
 // Helper to generate a list of dates
 const getDays = (startDate: Date, count: number): Date[] => {
   const days = [];
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   for (let i = 0; i < count; i++) {
     days.push(new Date(currentDate));
     currentDate.setDate(currentDate.getDate() + 1);
@@ -21,43 +21,81 @@ const toISODateString = (date: Date): string => {
 
 export const MealPlannerGrid: React.FC = () => {
   const { mealColumns, selectedDates } = useAppState();
-  const dispatch = useAppDispatch(); // <-- NEW
+  const dispatch = useAppDispatch();
 
-  // For Stage 1, we'll just show 7 days starting from today.
+  // We need the list of days for our logic
   const days = getDays(new Date(), 7);
+  // And a list of just the date strings in order
+  const displayedDayStrings = days.map(toISODateString);
 
   const gridStyle = {
     gridTemplateColumns: `150px repeat(${mealColumns.length}, 1fr)`,
   } as React.CSSProperties;
 
   // --- NEW Date Selection Handler ---
-  const handleDayClick = (dayString: string, e: React.MouseEvent) => {
-    const isSelected = selectedDates.includes(dayString);
+  const handleDayClick = (clickedDayString: string, e: React.MouseEvent) => {
+    const isSelected = selectedDates.includes(clickedDayString);
 
     if (!e.shiftKey) {
-      // Regular click: select only this day
+      // --- REGULAR CLICK (Toggle) ---
+      // This is the new toggle logic
+      let newSelectedDates: string[];
+      if (isSelected) {
+        newSelectedDates = selectedDates.filter((d) => d !== clickedDayString);
+      } else {
+        newSelectedDates = [...selectedDates, clickedDayString];
+      }
+      dispatch({ type: "SET_SELECTED_DATES", payload: newSelectedDates });
+    } else {
+      // --- SHIFT CLICK (Range Select) ---
+
+      // 1. Find the "anchor" (the first selected day in the list)
+      let anchorIndex = -1;
+      for (let i = 0; i < displayedDayStrings.length; i++) {
+        if (selectedDates.includes(displayedDayStrings[i])) {
+          anchorIndex = i;
+          break; // Found the top-most selected day
+        }
+      }
+
+      // 2. If no anchor, treat as a normal click
+      if (anchorIndex === -1) {
+        let newSelectedDates: string[];
+        if (isSelected) {
+          newSelectedDates = selectedDates.filter(
+            (d) => d !== clickedDayString
+          );
+        } else {
+          newSelectedDates = [...selectedDates, clickedDayString];
+        }
+        dispatch({ type: "SET_SELECTED_DATES", payload: newSelectedDates });
+        return;
+      }
+
+      // 3. Find the clicked index
+      const clickedIndex = displayedDayStrings.indexOf(clickedDayString);
+
+      // 4. Determine the range
+      const startIndex = Math.min(anchorIndex, clickedIndex);
+      const endIndex = Math.max(anchorIndex, clickedIndex);
+
+      // 5. Get all days within that range
+      const rangeToSelect = displayedDayStrings.slice(startIndex, endIndex + 1);
+
+      // 6. Merge with existing selection (using a Set to avoid duplicates)
+      const newSelectedDatesSet = new Set(selectedDates);
+      rangeToSelect.forEach((day) => newSelectedDatesSet.add(day));
+
       dispatch({
         type: "SET_SELECTED_DATES",
-        payload: isSelected ? [] : [dayString],
+        payload: Array.from(newSelectedDatesSet),
       });
-    } else {
-      // Shift click: toggle this day
-      if (isSelected) {
-        dispatch({
-          type: "SET_SELECTED_DATES",
-          payload: selectedDates.filter((d) => d !== dayString),
-        });
-      } else {
-        dispatch({
-          type: "SET_SELECTED_DATES",
-          payload: [...selectedDates, dayString],
-        });
-      }
     }
   };
 
   return (
     <div className={styles.gridContainer}>
+      {/* --- STICKY HEADER --- */}
       <div className={styles.gridHeader} style={gridStyle}>
         <div className={styles.headerCell}>Day</div>
         {mealColumns.map((colName) => (
@@ -67,20 +105,21 @@ export const MealPlannerGrid: React.FC = () => {
         ))}
       </div>
 
+      {/* --- SCROLLABLE BODY --- */}
       <div className={styles.gridBody}>
         <div className={styles.gridBodyContent} style={gridStyle}>
           {days.map((day) => {
             const dayString = toISODateString(day); // 'YYYY-MM-DD'
-            const isSelected = selectedDates.includes(dayString); // <-- NEW
+            const isSelected = selectedDates.includes(dayString);
 
             return (
               <React.Fragment key={dayString}>
                 {/* Day Header Cell (Y-Axis) */}
                 <div
                   className={`${styles.dayCell} ${styles.cell} ${
-                    isSelected ? styles.dayCellSelected : "" // <-- NEW CLASS
+                    isSelected ? styles.dayCellSelected : ""
                   }`}
-                  onClick={(e) => handleDayClick(dayString, e)} // <-- NEW HANDLER
+                  onClick={(e) => handleDayClick(dayString, e)} // <-- This now uses our new logic
                 >
                   <div>
                     {day.toLocaleDateString("en-US", { weekday: "long" })}
