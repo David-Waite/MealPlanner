@@ -33,7 +33,12 @@ export type Unit =
   | "oz"
   | "lb"
   | "pint"
-  | "can";
+  | "can"
+  | "large"
+  | "medium"
+  | "small"
+  | "bunches"
+  | "cloves";
 
 export interface Ingredient {
   id: string;
