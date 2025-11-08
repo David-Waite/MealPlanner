@@ -123,6 +123,22 @@ const MOCK_INGREDIENTS: Ingredient[] = [
   { id: "ing_kiwi", name: "Kiwi Fruit", category: "Produce" },
   { id: "ing_coffee", name: "Coffee", category: "Pantry" },
   { id: "ing_light_milk", name: "Light Milk", category: "Dairy" },
+
+  { id: "ing_chili_powder", name: "Chili Powder", category: "Pantry" },
+  { id: "ing_garlic_powder", name: "Garlic Powder", category: "Pantry" },
+  { id: "ing_paprika", name: "Paprika", category: "Pantry" },
+  { id: "ing_onion_powder", name: "Onion Powder", category: "Pantry" },
+  { id: "ing_mahimahi_fillet", name: "Mahimahi Fillet", category: "Meat" },
+  {
+    id: "ing_green_bell_pepper",
+    name: "Green Bell Pepper",
+    category: "Produce",
+  },
+  {
+    id: "ing_corn_tortilla_chips",
+    name: "Corn Tortilla Chips",
+    category: "Snacks",
+  },
 ];
 
 const MOCK_MEALS: Meal[] = [
@@ -307,6 +323,56 @@ const MOCK_MEALS: Meal[] = [
     servings: 1,
     ingredients: [
       { ingredientId: "ing_light_milk", quantity: 250, unit: "ml" },
+    ],
+  },
+  {
+    id: "meal12",
+    name: "Blackened Fish Bowls",
+    photoUrl: "/media/blackened-fish-bowls.jpg",
+    servings: 4, // Based on "4 mahimahi fillets"
+    ingredients: [
+      // Fish & Seasoning
+      { ingredientId: "ing_chili_powder", quantity: 25, unit: "g" },
+      { ingredientId: "ing_ground_cumin", quantity: 15, unit: "g" },
+      { ingredientId: "ing_garlic_powder", quantity: 10, unit: "g" },
+      { ingredientId: "ing_paprika", quantity: 10, unit: "g" },
+      { ingredientId: "ing_kosher_salt", quantity: 10, unit: "g" },
+      { ingredientId: "ing_onion_powder", quantity: 5, unit: "g" },
+      { ingredientId: "ing_black_pepper", quantity: 2.5, unit: "g" },
+      { ingredientId: "ing_mahimahi_fillet", quantity: 4, unit: "unit" },
+      { ingredientId: "ing_evoo", quantity: 30, unit: "g" },
+
+      // Bowls
+      { ingredientId: "ing_red_onion", quantity: 0.5, unit: "medium" },
+      { ingredientId: "ing_red_bell_pepper", quantity: 1, unit: "medium" },
+      { ingredientId: "ing_green_bell_pepper", quantity: 1, unit: "medium" },
+      { ingredientId: "ing_black_beans", quantity: 1, unit: "cup" },
+
+      // For Serving
+      { ingredientId: "ing_rice", quantity: 4, unit: "cup" },
+      { ingredientId: "ing_greek_yogurt", quantity: 1, unit: "unit" },
+      { ingredientId: "ing_cilantro", quantity: 25, unit: "g" },
+    ],
+  },
+  {
+    id: "meal13",
+    name: "Loaded Nachos",
+    photoUrl: "/media/loaded-nachos.jpg",
+    servings: 4, // Stated on recipe
+    ingredients: [
+      { ingredientId: "ing_corn_tortilla_chips", quantity: 340, unit: "g" },
+      { ingredientId: "ing_mexican_cheese_blend", quantity: 225, unit: "g" },
+      { ingredientId: "ing_evoo", quantity: 30, unit: "ml" },
+      { ingredientId: "ing_red_bell_pepper", quantity: 1, unit: "medium" },
+      { ingredientId: "ing_rotisserie_chicken", quantity: 1, unit: "unit" },
+      { ingredientId: "ing_black_beans", quantity: 2, unit: "cup" },
+      { ingredientId: "ing_corn_kernels", quantity: 1, unit: "cup" },
+      { ingredientId: "ing_cilantro", quantity: 0.5, unit: "cup" },
+      { ingredientId: "ing_scallions", quantity: 1, unit: "unit" },
+      { ingredientId: "ing_jalapeno", quantity: 0.5, unit: "medium" },
+      { ingredientId: "ing_chili_powder", quantity: 5, unit: "g" },
+      { ingredientId: "ing_kosher_salt", quantity: 2.5, unit: "g" },
+      { ingredientId: "ing_black_pepper", quantity: 2.5, unit: "g" },
     ],
   },
 ];
