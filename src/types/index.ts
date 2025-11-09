@@ -44,6 +44,7 @@ export interface Ingredient {
   id: string;
   name: string;
   category: IngredientCategory; // UPDATED from string
+  perishable: boolean; // <-- NEW: Added this flag
 }
 
 export interface RecipeIngredient {

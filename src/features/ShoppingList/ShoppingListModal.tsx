@@ -37,6 +37,7 @@ interface AggregatedItem {
   ingredientId: string;
   name: string;
   category: IngredientCategory;
+  perishable: boolean; // <-- NEW: Added this flag
   totalQuantity: number;
   unit: Unit;
   details: AggregatedItemDetail[];
@@ -87,6 +88,7 @@ const generateShoppingList = (
           ingredientId: ingredientId,
           name: masterIng.name,
           category: masterIng.category,
+          perishable: masterIng.perishable, // <-- NEW: Pass the flag
           unit: ingredient.unit,
           totalQuantity: amountToAdd,
           details: [detailEntry],
@@ -147,32 +149,42 @@ const generateNotesText = (list: GroupedList): string => {
 
   for (const group of list) {
     for (const item of group.items) {
-      // --- NEW: Re-aggregate logic ---
-      // 1. Create a temp map to aggregate by date ONLY
-      const dayMap = new Map<
-        string,
-        { formattedDate: string; totalAmount: number }
-      >();
+      // --- NEW: Check if item is perishable ---
+      if (item.perishable) {
+        // --- PERISHABLE: Use the original logic (breakdown by day) ---
+        // 1. Create a temp map to aggregate by date ONLY
+        const dayMap = new Map<
+          string,
+          { formattedDate: string; totalAmount: number }
+        >();
 
-      for (const detail of item.details) {
-        if (!dayMap.has(detail.date)) {
-          dayMap.set(detail.date, {
-            formattedDate: detail.formattedDate,
-            totalAmount: 0,
-          });
+        for (const detail of item.details) {
+          if (!dayMap.has(detail.date)) {
+            dayMap.set(detail.date, {
+              formattedDate: detail.formattedDate,
+              totalAmount: 0,
+            });
+          }
+          dayMap.get(detail.date)!.totalAmount += detail.amount;
         }
-        dayMap.get(detail.date)!.totalAmount += detail.amount;
-      }
-      // --- End new logic ---
+        // --- End re-aggregate logic ---
 
-      // 2. Loop over the new re-aggregated map
-      for (const data of dayMap.values()) {
-        // Format: amount unit item (date)
-        const line = `${data.totalAmount.toFixed(1)} ${item.unit} ${
+        // 2. Loop over the new re-aggregated map
+        for (const data of dayMap.values()) {
+          // Format: amount unit item (date)
+          const line = `${data.totalAmount.toFixed(1)} ${item.unit} ${
+            item.name
+          } (${data.formattedDate})\n`; // Add newline
+          text += line;
+        }
+      } else {
+        // --- NON-PERISHABLE: Use new logic (total sum) ---
+        const line = `${item.totalQuantity.toFixed(1)} ${item.unit} ${
           item.name
-        } (${data.formattedDate})\n`; // Add newline
+        }\n`;
         text += line;
       }
+      // --- END NEW LOGIC ---
     }
   }
   return text.trim();
