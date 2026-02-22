@@ -33,6 +33,7 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({
   const [name, setName] = useState("");
   const [servings, setServings] = useState(1);
   const [photoUrl, setPhotoUrl] = useState("");
+  const [tagsString, setTagsString] = useState("");
   const [formIngredients, setFormIngredients] = useState<FormIngredient[]>([]);
 
   // --- Effect to load initial data when editing ---
@@ -48,11 +49,13 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({
           tempId: crypto.randomUUID(),
         }))
       );
+      setTagsString(initialData.tags ? initialData.tags.join(", ") : "");
     } else {
       // Reset form when opening for 'New Meal'
       setName("");
       setServings(1);
       setPhotoUrl("");
+      setTagsString("");
       setFormIngredients([]);
     }
   }, [initialData, isOpen]); // Re-run when modal is opened
@@ -107,6 +110,10 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({
       servings,
       photoUrl,
       ingredients: finalIngredients,
+      tags: tagsString
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t !== ""),
     };
 
     // Dispatch the correct action
@@ -155,6 +162,15 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({
             />
           </FormGroup>
         </div>
+
+        <FormGroup label="Tags (comma separated)" htmlFor="tags">
+          <Input
+            id="tags"
+            value={tagsString}
+            onChange={(e) => setTagsString(e.target.value)}
+            placeholder="e.g., spicy, chicken, dinner"
+          />
+        </FormGroup>
 
         <h3 className={styles.subtitle}>Ingredients</h3>
         <div className={styles.ingredientList}>

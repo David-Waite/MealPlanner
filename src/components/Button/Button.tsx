@@ -10,12 +10,13 @@ export const Button: React.FC<ButtonProps> = ({
   onClick,
   variant = "primary",
   type = "button",
+  className = "",
   ...props
 }) => {
   return (
     <button
       type={type}
-      className={`${styles.btn} ${styles[variant]}`}
+      className={`${styles.btn} ${styles[variant]} ${className}`}
       onClick={onClick}
       {...props}
     >

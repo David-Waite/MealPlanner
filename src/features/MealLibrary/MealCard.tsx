@@ -77,6 +77,15 @@ export const MealCard: React.FC<MealCardProps> = ({
         </button>
       </div>
 
+      {/* UPDATED: Show dynamic serving count overlay */}
+      <span
+        className={`${styles.servingsTracker} ${
+          servingsToPlan === 0 ? styles.servingsComplete : ""
+        }`}
+      >
+        {servingsToPlan}
+      </span>
+
       <img
         src={meal.photoUrl}
         alt={meal.name}
@@ -85,16 +94,15 @@ export const MealCard: React.FC<MealCardProps> = ({
       />
       <div className={styles.cardContent}>
         <h3 className={styles.cardTitle}>{meal.name}</h3>
-        <div className={styles.cardInfo}>
-          {/* UPDATED: Show dynamic serving count */}
-          <span
-            className={`${styles.servingsTracker} ${
-              servingsToPlan === 0 ? styles.servingsComplete : ""
-            }`}
-          >
-            {servingsToPlan}
-          </span>
-        </div>
+        {meal.tags && meal.tags.length > 0 && (
+          <div className={styles.cardTags}>
+            {meal.tags.map((tag) => (
+              <span key={tag} className={styles.cardTag}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

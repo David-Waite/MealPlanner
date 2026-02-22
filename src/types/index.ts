@@ -58,6 +58,7 @@ export interface Meal {
   photoUrl: string;
   servings: number;
   ingredients: RecipeIngredient[];
+  tags: string[];
 }
 
 export interface User {

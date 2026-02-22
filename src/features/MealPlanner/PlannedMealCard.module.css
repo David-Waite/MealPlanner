@@ -1,102 +1,128 @@
 .card {
-  background-color: var(--color-card-bg);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 1px 2px var(--color-card-shadow);
+  background-color: #ffffff; /* Pure white for a clean look */
+  border-radius: 12px; /* Smoother, larger radius */
+  /* Modern soft shadow stack */
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: var(--spacing-2);
   display: flex;
   align-items: center;
   overflow: hidden;
-  cursor: pointer; /* <-- Updated from 'grab' to 'pointer' */
-  border: 2px solid transparent;
-
+  cursor: pointer;
+  border: 1px solid transparent; /* Reserve space for border transition */
+  
   /* Stacking styles */
   position: relative;
-  transition: transform 150ms ease, z-index 150ms ease;
+  transition: all 200ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  padding: 4px; /* Tiny internal padding for breathing room */
 }
+
+/* Selected State - subtle tint and blue ring */
 .cardSelected {
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3);
+  background-color: #f0f7ff;
+  border-color: rgba(74, 144, 226, 0.5);
+  box-shadow: 
+    0 2px 8px rgba(74, 144, 226, 0.25),
+    0 0 0 2px rgba(74, 144, 226, 0.2);
 }
 
 .card:hover {
-  /* Bring to front on hover */
-  transform: scale(1.05);
+  /* Lift effect */
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.12);
   z-index: 10;
 }
 
-/* Make stacked cards overlap */
+/* Make stacked cards overlap nicely */
 .card:not(:first-child) {
-  margin-top: -30px;
+  margin-top: -35px; /* Slightly tighter overlap */
 }
 
 .cardImage {
-  width: 40px;
-  height: 40px;
+  width: 48px; /* Bigger image */
+  height: 48px;
   object-fit: cover;
   flex-shrink: 0;
+  border-radius: 8px; /* Matches card radius logic */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .cardContent {
-  padding: var(--spacing-1) var(--spacing-2);
+  padding: 0 var(--spacing-3); /* More horizontal spacing */
   width: 100%;
-  min-width: 0; /* Fix for flex truncation */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .cardTitle {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.9rem; /* Slightly larger */
+  font-weight: 700;
+  color: #2d3748; /* Dark grey/blue for sharpness */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-bottom: 4px;
+  line-height: 1.2;
 }
 
 .userAvatars {
   display: flex;
-  margin-top: var(--spacing-1);
+  margin-top: 0;
 }
 
 .miniAvatar {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6rem;
-  font-weight: 600;
-  border: 1px solid white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px #ffffff; /* Cutout effect */
 }
 
 /* Overlap mini avatars */
 .miniAvatar:not(:first-child) {
-  margin-left: -6px;
+  margin-left: -8px; /* Tighter overlap */
 }
 
 .removeButton {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 18px;
-  height: 18px;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: none;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #718096;
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
-  opacity: 0; /* Hidden by default */
-  transition: opacity 150ms ease;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 150ms ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .card:hover .removeButton {
-  opacity: 1; /* Show on card hover */
+  opacity: 1;
+  transform: scale(1);
 }
 
 .removeButton:hover {
-  background-color: #d0021b; /* Danger color */
+  background-color: #e53e3e; /* Modern red */
+  color: white;
+  border-color: #e53e3e;
+  box-shadow: 0 2px 8px rgba(229, 62, 62, 0.4);
 }

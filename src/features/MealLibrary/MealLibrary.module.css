@@ -1,52 +1,344 @@
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 16px 40px 24px;
+}
 .mealCard {
   position: relative;
-
-  background-color: var(--color-card-bg);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 1px 3px var(--color-card-shadow);
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.08); /* Soft shadow stack */
   cursor: grab;
-  transition: box-shadow 150ms ease;
+  transition: all 200ms cubic-bezier(0.25, 0.8, 0.25, 1);
   -webkit-user-select: none;
   -ms-user-select: none;
   user-select: none;
-}
-
-/* --- New Styles for Card Actions --- */
-.cardActions {
-  position: absolute;
-  top: var(--spacing-2);
-  right: var(--spacing-2);
   display: flex;
-  gap: var(--spacing-1);
-  opacity: 0; /* Hide by default */
-  transition: opacity 150ms ease;
-  z-index: 2;
+  flex-direction: column;
+  overflow: hidden; 
 }
 
-.mealCard:hover .cardActions {
-  opacity: 1; /* Show on hover */
+
+.mealCard:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 
+    0 8px 16px rgba(0, 0, 0, 0.06),
+    0 12px 32px rgba(0, 0, 0, 0.12); /* Deep lift */
+  z-index: 10;
 }
 
-.actionButton {
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-1) var(--spacing-2);
+.mealCard:active {
+  cursor: grabbing;
+}
+
+/* --- Content --- */
+.cardImage {
+  width: 100%;
+  aspect-ratio: 268 / 140; /* Maintain original ratio (from 300px sidebar width) */
+  object-fit: cover;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.cardContent {
+  padding: 8px 8px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cardTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 2px 0;
+  line-height: 1.3;
+}
+
+/* --- Servings Badge (Overlay) --- */
+.servingsTracker {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  
+  padding: 4px 8px;
+  border-radius: 99px;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  
+  color: #4a5568;
   font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.actionButton:hover {
-  background-color: rgba(0, 0, 0, 0.8);
-}
-
-.deleteButton:hover {
-  background-color: #d0021b;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 200ms ease;
 }
 
 .servingsComplete {
-  background-color: #a0f0c0;
-  color: #005221;
+  background-color: #c6f6d5; /* Green tint */
+  color: #276749; /* Green text */
 }
+
+/* --- Actions Overlay --- */
+.cardActions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all 200ms ease;
+  z-index: 5;
+}
+
+.mealCard:hover .cardActions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.actionButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #4a5568;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 150ms ease;
+  padding: 0; /* Reset */
+}
+
+.actionButton:hover {
+  transform: scale(1.1);
+  background-color: #ffffff;
+  color: #2d3748;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.deleteButton:hover {
+  background-color: #fff5f5;
+  color: #e53e3e;
+  border-color: #feb2b2;
+}
+
+/* --- Sidebar Layout --- */
+.sidebarWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sidebarHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: var(--color-bg-sidebar);
+  z-index: 20;
+  padding: 24px 24px 16px 24px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.scrollableArea {
+  flex-grow: 1;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* Custom Scrollbar */
+.scrollableArea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollableArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollableArea::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.3s;
+}
+
+.scrollableArea:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.scrollableArea::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebarTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.newMealBtn {
+  font-weight: 600;
+  padding: 8px 16px;
+}
+
+.searchContainer {
+  position: relative;
+  width: 100%;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #ffffff; /* Make fully opaque so cards don't show through */
+  font-size: 0.95rem;
+  transition: all 200ms ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.searchInput:focus {
+  outline: none;
+  background-color: #ffffff;
+  border-color: #4c51bf; /* Indigo shift */
+  box-shadow: 
+    0 0 0 3px rgba(76, 81, 191, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.searchInput::placeholder {
+  color: #a0aec0;
+}
+
+.noResults {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* --- Tag Filters --- */
+.tagFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  max-height: 62px; /* Shows approx two rows */
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  padding-bottom: 4px;
+  scrollbar-gutter: stable;
+}
+
+/* Custom Scrollbar for Tags (Hidden like in meals list) */
+.tagFilters::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tagFilters::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tagFilters::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.3s;
+}
+
+.tagFilters:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+.tagFilter {
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #f7fafc;
+  color: #718096;
+  border: 1px solid #edf2f7;
+  cursor: pointer;
+  transition: all 150ms ease;
+  scroll-snap-align: start;
+}
+
+.tagFilter:hover {
+  background-color: #edf2f7;
+  color: #4a5568;
+}
+
+.tagFilterActive {
+  background-color: #4c51bf;
+  color: #ffffff;
+  border-color: #4c51bf;
+}
+
+.tagFilterActive:hover {
+  background-color: #434190;
+  color: #ffffff;
+}
+
+.clearTagsBtn {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: none;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.clearTagsBtn:hover {
+  color: #718096;
+}
+
+/* --- Card Tags --- */
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.cardTag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #a0aec0;
+  background-color: #f8fafc;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #edf2f7;
+}
+

@@ -482,6 +482,7 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_italian_seasoning", quantity: 5, unit: "g" },
       { ingredientId: "ing_red_pepper_flakes", quantity: 1.5, unit: "g" },
     ],
+    tags: ["spicy", "pasta", "turkey", "dinner"],
   },
   {
     id: "meal2",
@@ -502,6 +503,7 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_thai_basil", quantity: 1, unit: "cup" },
       { ingredientId: "ing_rice", quantity: 4, unit: "cup" },
     ],
+    tags: ["chicken", "rice", "dinner", "thai"],
   },
   {
     id: "meal3",
@@ -520,6 +522,7 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_evoo", quantity: 30, unit: "ml" },
       { ingredientId: "ing_kosher_salt", quantity: 2.5, unit: "g" },
     ],
+    tags: ["fish", "salmon", "dinner", "healthy"],
   },
   {
     id: "meal4",
@@ -550,6 +553,7 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_ground_cumin", quantity: 5, unit: "g" },
       { ingredientId: "ing_kosher_salt", quantity: 10, unit: "g" },
     ],
+    tags: ["chicken", "dinner", "citrus"],
   }, // --- Meal 5 (New) ---
   {
     id: "meal5",
@@ -564,6 +568,7 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_red_bell_pepper", quantity: 1, unit: "small" },
       { ingredientId: "ing_avocado", quantity: 2, unit: "medium" },
     ],
+    tags: ["turkey", "lunch", "wrap"],
   },
 
   {
@@ -586,6 +591,7 @@ const MOCK_MEALS: Meal[] = [
       // For Serving
       { ingredientId: "ing_tortilla_chips", quantity: 1, unit: "unit" },
     ],
+    tags: ["chicken", "salad", "lunch", "mexican"],
   },
   {
     id: "meal7",
@@ -607,6 +613,7 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_scallions", quantity: 2, unit: "unit" },
       { ingredientId: "ing_lemon", quantity: 1, unit: "medium" },
     ],
+    tags: ["fish", "tuna", "salad", "lunch", "healthy"],
   },
   {
     id: "meal8",
@@ -614,6 +621,7 @@ const MOCK_MEALS: Meal[] = [
     photoUrl: "/media/banana.jpg",
     servings: 1,
     ingredients: [{ ingredientId: "ing_banana", quantity: 1, unit: "unit" }],
+    tags: ["fruit", "snack"],
   },
 
   // --- Meal 9 (New Snack) ---
@@ -623,6 +631,7 @@ const MOCK_MEALS: Meal[] = [
     photoUrl: "/media/apple.jpg",
     servings: 1,
     ingredients: [{ ingredientId: "ing_apple", quantity: 1, unit: "unit" }],
+    tags: ["fruit", "snack"],
   },
 
   // --- Meal 10 (New Snack) ---
@@ -632,6 +641,7 @@ const MOCK_MEALS: Meal[] = [
     photoUrl: "/media/kiwi-fruit.jpg",
     servings: 1,
     ingredients: [{ ingredientId: "ing_kiwi", quantity: 1, unit: "unit" }],
+    tags: ["fruit", "snack"],
   },
 
   // --- Meal 11 (New Coffee) ---
@@ -643,6 +653,7 @@ const MOCK_MEALS: Meal[] = [
     ingredients: [
       { ingredientId: "ing_light_milk", quantity: 250, unit: "ml" },
     ],
+    tags: ["drink", "caffeine"],
   },
   {
     id: "meal12",
@@ -672,6 +683,7 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_greek_yogurt", quantity: 1, unit: "unit" },
       { ingredientId: "ing_cilantro", quantity: 25, unit: "g" },
     ],
+    tags: ["fish", "mahimahi", "dinner", "spicy"],
   },
   {
     id: "meal13",
@@ -693,6 +705,7 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_kosher_salt", quantity: 2.5, unit: "g" },
       { ingredientId: "ing_black_pepper", quantity: 2.5, unit: "g" },
     ],
+    tags: ["chicken", "snack", "mexican"],
   },
 ];
 
