@@ -458,6 +458,60 @@ const MOCK_INGREDIENTS: Ingredient[] = [
     category: "Snacks",
     perishable: false,
   },
+  {
+    id: "ing_rice_vinegar",
+    name: "Rice Vinegar",
+    category: "Pantry",
+    perishable: false,
+  },
+  {
+    id: "ing_toasted_sesame_oil",
+    name: "Toasted Sesame Oil",
+    category: "Pantry",
+    perishable: false,
+  },
+  {
+    id: "ing_cabbage_shredded",
+    name: "Shredded Cabbage",
+    category: "Produce",
+    perishable: false,
+  },
+  {
+    id: "ing_carrots_shredded",
+    name: "Shredded Carrots",
+    category: "Produce",
+    perishable: false,
+  },
+  {
+    id: "ing_mint_fresh",
+    name: "Fresh Mint",
+    category: "Produce",
+    perishable: false,
+  },
+  {
+    id: "ing_tortillas_mixed",
+    name: "Tortillas (Flour, Corn, or Almond)",
+    category: "Pantry",
+    perishable: false,
+  },
+  {
+    id: "ing_beef_sirloin",
+    name: "Thinly Sliced Beef Sirloin",
+    category: "Meat",
+    perishable: true,
+  },
+  {
+    id: "ing_cornstarch",
+    name: "Cornstarch",
+    category: "Pantry",
+    perishable: false,
+  },
+  {
+    id: "ing_broccoli_frozen",
+    name: "Frozen Broccoli Florets",
+    category: "Frozen",
+    perishable: false,
+  },
 ];
 
 const MOCK_MEALS: Meal[] = [
@@ -518,7 +572,7 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_soy_sauce_reduced", quantity: 30, unit: "ml" },
       { ingredientId: "ing_ginger", quantity: 10, unit: "g" },
       { ingredientId: "ing_salmon_fillet", quantity: 4, unit: "unit" },
-      { ingredientId: "ing_broccolini", quantity: 2, unit: "bunches" }, // 2 bunches
+      { ingredientId: "ing_broccolini", quantity: 2, unit: "bunches" },
       { ingredientId: "ing_evoo", quantity: 30, unit: "ml" },
       { ingredientId: "ing_kosher_salt", quantity: 2.5, unit: "g" },
     ],
@@ -528,10 +582,9 @@ const MOCK_MEALS: Meal[] = [
     id: "meal4",
     name: "Chile-Lime Cilantro Chicken with Lemony Pickled Onions",
     photoUrl: "/media/chile-lime-cilantro-chicken-lemony-pickled-onions.jpg",
-    servings: 4, // Assumed 4 servings from 1.5 lbs chicken
+    servings: 4,
     ingredients: [
-      // Main Meal Ingredients
-      { ingredientId: "ing_red_onion", quantity: 1, unit: "small" }, // "1 small"
+      { ingredientId: "ing_red_onion", quantity: 1, unit: "small" },
       { ingredientId: "ing_lemon", quantity: 0.5, unit: "medium" },
       { ingredientId: "ing_olive_oil_spray", quantity: 1, unit: "unit" },
       {
@@ -541,25 +594,23 @@ const MOCK_MEALS: Meal[] = [
       },
       { ingredientId: "ing_broccoli", quantity: 4, unit: "cup" },
       { ingredientId: "ing_evoo", quantity: 60, unit: "ml" },
-      { ingredientId: "ing_rice", quantity: 4, unit: "cup" }, // "Steamed Rice, for serving"
-      { ingredientId: "ing_lime", quantity: 2, unit: "medium" }, // "Lime wedges, for squeezing"
-
-      // Sauce Ingredients (prefixed with 'ing_')
-      { ingredientId: "ing_jalapeno", quantity: 1, unit: "large" }, // "1 large or 2 small"
+      { ingredientId: "ing_rice", quantity: 4, unit: "cup" },
+      { ingredientId: "ing_lime", quantity: 2, unit: "medium" },
+      { ingredientId: "ing_jalapeno", quantity: 1, unit: "large" },
       { ingredientId: "ing_cilantro", quantity: 1.5, unit: "cup" },
-      { ingredientId: "ing_garlic", quantity: 1, unit: "cloves" }, // 1 clove
+      { ingredientId: "ing_garlic", quantity: 1, unit: "cloves" },
       { ingredientId: "ing_mayonnaise", quantity: 62, unit: "ml" },
       { ingredientId: "ing_greek_yogurt", quantity: 62, unit: "ml" },
       { ingredientId: "ing_ground_cumin", quantity: 5, unit: "g" },
       { ingredientId: "ing_kosher_salt", quantity: 10, unit: "g" },
     ],
     tags: ["chicken", "dinner", "citrus"],
-  }, // --- Meal 5 (New) ---
+  },
   {
     id: "meal5",
     name: "Turkey Avo Ranch Wraps",
     photoUrl: "/media/turkey-avo-ranch-wraps.jpg",
-    servings: 4, // Based on "4 ... tortillas"
+    servings: 4,
     ingredients: [
       { ingredientId: "ing_spinach_tortilla", quantity: 4, unit: "unit" },
       { ingredientId: "ing_ranch_dressing", quantity: 125, unit: "ml" },
@@ -575,20 +626,17 @@ const MOCK_MEALS: Meal[] = [
     id: "meal6",
     name: "Chicken Taco Salad Jars",
     photoUrl: "/media/chicken-taco-salad-jars.jpg",
-    servings: 4, // Based on "Four ... jars"
+    servings: 4,
     ingredients: [
-      // Chicken
       { ingredientId: "ing_rotisserie_chicken", quantity: 1, unit: "unit" },
       { ingredientId: "ing_taco_seasoning", quantity: 15, unit: "g" },
       { ingredientId: "ing_pickled_jalapenos", quantity: 15, unit: "ml" },
-      // Layers
       { ingredientId: "ing_corn_kernels", quantity: 1, unit: "cup" },
       { ingredientId: "ing_black_beans", quantity: 1, unit: "cup" },
       { ingredientId: "ing_mexican_cheese_blend", quantity: 125, unit: "g" },
       { ingredientId: "ing_grape_tomatoes", quantity: 125, unit: "g" },
       { ingredientId: "ing_avocado", quantity: 1, unit: "medium" },
       { ingredientId: "ing_romaine_lettuce", quantity: 4, unit: "cup" },
-      // For Serving
       { ingredientId: "ing_tortilla_chips", quantity: 1, unit: "unit" },
     ],
     tags: ["chicken", "salad", "lunch", "mexican"],
@@ -597,7 +645,7 @@ const MOCK_MEALS: Meal[] = [
     id: "meal7",
     name: "Lemony Quinoa Tuna Salad",
     photoUrl: "/media/lemony-quinoa-tuna-salad.jpg",
-    servings: 4, // Assumed
+    servings: 4,
     ingredients: [
       { ingredientId: "ing_quinoa", quantity: 250, unit: "g" },
       { ingredientId: "ing_kosher_salt", quantity: 5, unit: "g" },
@@ -624,7 +672,6 @@ const MOCK_MEALS: Meal[] = [
     tags: ["fruit", "snack"],
   },
 
-  // --- Meal 9 (New Snack) ---
   {
     id: "meal9",
     name: "Apple",
@@ -634,7 +681,6 @@ const MOCK_MEALS: Meal[] = [
     tags: ["fruit", "snack"],
   },
 
-  // --- Meal 10 (New Snack) ---
   {
     id: "meal10",
     name: "Kiwi Fruit",
@@ -644,7 +690,6 @@ const MOCK_MEALS: Meal[] = [
     tags: ["fruit", "snack"],
   },
 
-  // --- Meal 11 (New Coffee) ---
   {
     id: "meal11",
     name: "Coffee",
@@ -659,9 +704,8 @@ const MOCK_MEALS: Meal[] = [
     id: "meal12",
     name: "Blackened Fish Bowls",
     photoUrl: "/media/blackened-fish-bowls.jpg",
-    servings: 4, // Based on "4 mahimahi fillets"
+    servings: 4,
     ingredients: [
-      // Fish & Seasoning
       { ingredientId: "ing_chili_powder", quantity: 25, unit: "g" },
       { ingredientId: "ing_ground_cumin", quantity: 15, unit: "g" },
       { ingredientId: "ing_garlic_powder", quantity: 10, unit: "g" },
@@ -671,14 +715,10 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_black_pepper", quantity: 2.5, unit: "g" },
       { ingredientId: "ing_mahimahi_fillet", quantity: 4, unit: "unit" },
       { ingredientId: "ing_evoo", quantity: 30, unit: "g" },
-
-      // Bowls
       { ingredientId: "ing_red_onion", quantity: 0.5, unit: "medium" },
       { ingredientId: "ing_red_bell_pepper", quantity: 1, unit: "medium" },
       { ingredientId: "ing_green_bell_pepper", quantity: 1, unit: "medium" },
       { ingredientId: "ing_black_beans", quantity: 1, unit: "cup" },
-
-      // For Serving
       { ingredientId: "ing_rice", quantity: 4, unit: "cup" },
       { ingredientId: "ing_greek_yogurt", quantity: 1, unit: "unit" },
       { ingredientId: "ing_cilantro", quantity: 25, unit: "g" },
@@ -689,7 +729,7 @@ const MOCK_MEALS: Meal[] = [
     id: "meal13",
     name: "Loaded Nachos",
     photoUrl: "/media/loaded-nachos.jpg",
-    servings: 4, // Stated on recipe
+    servings: 4,
     ingredients: [
       { ingredientId: "ing_corn_tortilla_chips", quantity: 340, unit: "g" },
       { ingredientId: "ing_mexican_cheese_blend", quantity: 225, unit: "g" },
@@ -706,6 +746,49 @@ const MOCK_MEALS: Meal[] = [
       { ingredientId: "ing_black_pepper", quantity: 2.5, unit: "g" },
     ],
     tags: ["chicken", "snack", "mexican"],
+  },
+  {
+    id: "meal14",
+    name: "Sesame Ginger Chicken Wraps",
+    photoUrl: "/media/sesame-ginger-chicken-wraps.jpeg",
+    servings: 4,
+    ingredients: [
+      // Dressing
+      { ingredientId: "ing_ginger", quantity: 2, unit: "tbsp" },
+      { ingredientId: "ing_garlic", quantity: 2, unit: "cloves" },
+      { ingredientId: "ing_soy_sauce_reduced", quantity: 3, unit: "tbsp" },
+      { ingredientId: "ing_rice_vinegar", quantity: 2, unit: "tbsp" },
+      { ingredientId: "ing_toasted_sesame_oil", quantity: 1, unit: "tbsp" },
+      { ingredientId: "ing_kosher_salt", quantity: 5, unit: "g" },
+      { ingredientId: "ing_black_pepper", quantity: 5, unit: "g" },
+      // Wraps
+      { ingredientId: "ing_rotisserie_chicken", quantity: 3, unit: "cup" },
+      { ingredientId: "ing_cabbage_shredded", quantity: 3, unit: "cup" },
+      { ingredientId: "ing_carrots_shredded", quantity: 1, unit: "cup" },
+      { ingredientId: "ing_parsley", quantity: 0.33, unit: "cup" },
+      { ingredientId: "ing_spinach_tortilla", quantity: 4, unit: "unit" },
+    ],
+    tags: ["chicken", "lunch", "asian", "wrap"],
+  },
+  {
+    id: "meal15",
+    name: "Take-In Beef with Broccoli",
+    photoUrl: "/media/take-in-beef-with-broccoli.jpg",
+    servings: 4,
+    ingredients: [
+      { ingredientId: "ing_beef_sirloin", quantity: 1, unit: "lb" },
+      { ingredientId: "ing_soy_sauce_reduced", quantity: 0.5, unit: "cup" },
+      { ingredientId: "ing_light_brown_sugar", quantity: 2, unit: "tbsp" },
+      { ingredientId: "ing_garlic", quantity: 3, unit: "cloves" },
+      { ingredientId: "ing_ginger", quantity: 1, unit: "tbsp" },
+      { ingredientId: "ing_toasted_sesame_oil", quantity: 1, unit: "tbsp" },
+      { ingredientId: "ing_black_pepper", quantity: 0.25, unit: "tsp" },
+      { ingredientId: "ing_broccoli_frozen", quantity: 4, unit: "cup" },
+      { ingredientId: "ing_cornstarch", quantity: 1, unit: "tbsp" },
+      { ingredientId: "ing_rice", quantity: 4, unit: "cup" },
+      { ingredientId: "ing_scallions", quantity: 1, unit: "unit" },
+    ],
+    tags: ["beef", "dinner", "asian", "freeze-friendly"],
   },
 ];
 
