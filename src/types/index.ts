@@ -1,6 +1,5 @@
 // --- Core Data Models ---
 
-// NEW: Strongly-typed categories
 export type IngredientCategory =
   | "Produce"
   | "Meat"
@@ -9,9 +8,8 @@ export type IngredientCategory =
   | "Snacks"
   | "Household & Cleaning"
   | "Frozen"
-  | "Other"; // Added 'Other' as a fallback
+  | "Other";
 
-// NEW: The defined sort order for the shopping list
 export const CATEGORY_ORDER: IngredientCategory[] = [
   "Produce",
   "Meat",
@@ -23,35 +21,47 @@ export const CATEGORY_ORDER: IngredientCategory[] = [
   "Other",
 ];
 
-export type Unit =
-  | "g"
-  | "ml"
-  | "unit"
-  | "tsp"
-  | "tbsp"
-  | "cup"
-  | "oz"
-  | "lb"
-  | "pint"
-  | "can"
-  | "large"
-  | "medium"
-  | "small"
-  | "bunches"
-  | "cloves";
+// --- Unit System ---
+
+export type MetricUnit = "g" | "kg" | "ml" | "l";
+export type ImperialUnit = "oz" | "lb" | "fl oz" | "pint";
+export type CookingUnit = "¼ tsp" | "½ tsp" | "tsp" | "½ tbsp" | "tbsp" | "cup" | "unit";
+
+export type CoreUnit = MetricUnit | ImperialUnit | CookingUnit;
+
+export const METRIC_UNITS: MetricUnit[] = ["g", "kg", "ml", "l"];
+export const IMPERIAL_UNITS: ImperialUnit[] = ["oz", "lb", "fl oz", "pint"];
+export const COOKING_UNITS: CookingUnit[] = ["¼ tsp", "½ tsp", "tsp", "½ tbsp", "tbsp", "cup", "unit"];
+
+// A custom unit is tied to a specific ingredient (e.g. "clove" for garlic)
+export interface CustomUnit {
+  id: string;
+  label: string;
+  ingredientId: string;
+  metricEquivalent?: number; // e.g. 4
+  metricUnit?: MetricUnit;   // e.g. "g"
+}
+
+// A unit reference is either a standard core unit or a custom ingredient-specific unit
+export type UnitRef =
+  | { type: "core"; unit: CoreUnit }
+  | { type: "custom"; customUnitId: string };
+
+// --- Ingredient & Meal ---
 
 export interface Ingredient {
   id: string;
   name: string;
-  category: IngredientCategory; // UPDATED from string
-  perishable: boolean; // <-- NEW: Added this flag
+  category: IngredientCategory;
+  perishable: boolean;
 }
 
 export interface RecipeIngredient {
   ingredientId: string;
   quantity: number;
-  unit: Unit;
+  unit: UnitRef;
 }
+
 export interface Meal {
   id: string;
   name: string;
@@ -59,6 +69,7 @@ export interface Meal {
   servings: number;
   ingredients: RecipeIngredient[];
   tags: string[];
+  localUpdatedAt?: number; // client Date.now() — used for cloud merge conflict resolution
 }
 
 export interface User {
@@ -75,22 +86,27 @@ export interface PlannedMeal {
   assignedUsers: string[];
 }
 
+// --- Shopping List Settings ---
+
+export interface ShoppingListSettings {
+  unitSystem: "metric" | "imperial";
+  showCustomLabels: boolean;
+}
+
 // --- Application State ---
 
 export interface AppState {
-  // Master data lists
   meals: Meal[];
   ingredients: Ingredient[];
   users: User[];
+  customUnits: CustomUnit[];
 
-  // The plan itself
   plan: PlannedMeal[];
 
-  // UI state
   selectedUserIds: string[];
   selectedDates: string[];
   selectedPlannedMealInstanceId: string | null;
 
-  // App settings
   mealColumns: string[];
+  shoppingListSettings: ShoppingListSettings;
 }

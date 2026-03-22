@@ -1,6 +1,5 @@
-import type { Meal, PlannedMeal } from "../types";
+import type { Meal, PlannedMeal, CustomUnit, ShoppingListSettings } from "../types";
 
-// A "Discriminated Union" for all possible state changes
 export type Action =
   | { type: "ADD_MEAL"; payload: Meal }
   | { type: "UPDATE_MEAL"; payload: Meal }
@@ -9,4 +8,9 @@ export type Action =
   | { type: "REMOVE_PLANNED_MEAL"; payload: { instanceId: string } }
   | { type: "SET_SELECTED_USERS"; payload: string[] }
   | { type: "SET_SELECTED_DATES"; payload: string[] }
-  | { type: "SET_SELECTED_INSTANCE"; payload: string | null };
+  | { type: "SET_SELECTED_INSTANCE"; payload: string | null }
+  | { type: "ADD_CUSTOM_UNIT"; payload: CustomUnit }
+  | { type: "UPDATE_CUSTOM_UNIT"; payload: CustomUnit }
+  | { type: "DELETE_CUSTOM_UNIT"; payload: { customUnitId: string } }
+  | { type: "SET_SHOPPING_LIST_SETTINGS"; payload: Partial<ShoppingListSettings> }
+  | { type: "MERGE_CLOUD_DATA"; payload: { meals: Meal[]; customUnits: CustomUnit[] } };

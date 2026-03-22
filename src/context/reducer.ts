@@ -5,23 +5,22 @@ export const appReducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
     // --- Meal Actions ---
     case "ADD_MEAL":
-      // ... (existing code)
       return {
         ...state,
-        meals: [...state.meals, action.payload],
+        meals: [...state.meals, { ...action.payload, localUpdatedAt: Date.now() }],
       };
 
     case "UPDATE_MEAL":
-      // ... (existing code)
       return {
         ...state,
         meals: state.meals.map((meal) =>
-          meal.id === action.payload.id ? action.payload : meal
+          meal.id === action.payload.id
+            ? { ...action.payload, localUpdatedAt: Date.now() }
+            : meal
         ),
       };
 
     case "DELETE_MEAL":
-      // ... (existing code)
       return {
         ...state,
         plan: state.plan.filter((p) => p.mealId !== action.payload.mealId),
@@ -30,13 +29,8 @@ export const appReducer = (state: AppState, action: Action): AppState => {
 
     // --- PlannedMeal Actions ---
     case "ADD_PLANNED_MEAL":
-      // ... (existing code)
-      return {
-        ...state,
-        plan: [...state.plan, action.payload],
-      };
+      return { ...state, plan: [...state.plan, action.payload] };
 
-    // --- NEW ---
     case "REMOVE_PLANNED_MEAL":
       return {
         ...state,
@@ -47,24 +41,49 @@ export const appReducer = (state: AppState, action: Action): AppState => {
 
     // --- UI Actions ---
     case "SET_SELECTED_USERS":
-      // ... (existing code)
-      return {
-        ...state,
-        selectedUserIds: action.payload,
-      };
+      return { ...state, selectedUserIds: action.payload };
 
     case "SET_SELECTED_DATES":
-      // ... (existing code)
+      return { ...state, selectedDates: action.payload };
+
+    case "SET_SELECTED_INSTANCE":
+      return { ...state, selectedPlannedMealInstanceId: action.payload };
+
+    // --- Custom Unit Actions ---
+    case "ADD_CUSTOM_UNIT":
+      return { ...state, customUnits: [...state.customUnits, action.payload] };
+
+    case "UPDATE_CUSTOM_UNIT":
       return {
         ...state,
-        selectedDates: action.payload,
+        customUnits: state.customUnits.map((cu) =>
+          cu.id === action.payload.id ? action.payload : cu
+        ),
       };
 
-    // --- NEW ---
-    case "SET_SELECTED_INSTANCE":
+    case "DELETE_CUSTOM_UNIT":
       return {
         ...state,
-        selectedPlannedMealInstanceId: action.payload,
+        customUnits: state.customUnits.filter(
+          (cu) => cu.id !== action.payload.customUnitId
+        ),
+      };
+
+    // --- Shopping List Settings ---
+    case "SET_SHOPPING_LIST_SETTINGS":
+      return {
+        ...state,
+        shoppingListSettings: {
+          ...state.shoppingListSettings,
+          ...action.payload,
+        },
+      };
+
+    case "MERGE_CLOUD_DATA":
+      return {
+        ...state,
+        meals: action.payload.meals,
+        customUnits: action.payload.customUnits,
       };
 
     default:

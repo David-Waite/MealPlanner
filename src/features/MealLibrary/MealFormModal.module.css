@@ -1,43 +1,100 @@
 .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-4);
+  gap: var(--spacing-3);
 }
 
 .subtitle {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
   margin-top: var(--spacing-5);
   margin-bottom: var(--spacing-3);
-  border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
 }
+
+/* --- Ingredient list --- */
 
 .ingredientList {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-3);
-  margin-bottom: var(--spacing-4);
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
 }
 
 .ingredientRow {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
+  grid-template-columns: 2fr 80px 110px 36px;
   gap: var(--spacing-2);
   align-items: center;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 10px;
+  padding: var(--spacing-2) var(--spacing-2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.ingredientRow:focus-within {
+  box-shadow: 0 0 0 2px rgba(76, 81, 191, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: rgba(76, 81, 191, 0.3);
 }
 
 .quantityInput {
-  text-align: right;
+  text-align: center;
 }
 
 .unitSelect {
   flex-shrink: 0;
 }
 
+/* --- Custom unit creator --- */
+
+.customUnitCreator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-3);
+  margin-top: 2px;
+  background-color: rgba(76, 81, 191, 0.04);
+  border: 1px dashed rgba(76, 81, 191, 0.3);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.customUnitLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4c51bf;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.customUnitLabelInput {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.customUnitEquivInput {
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.customUnitMetricSelect {
+  width: 72px;
+  flex-shrink: 0;
+}
+
+/* --- Add ingredient button --- */
+
 .addIngredientBtn {
   width: 100%;
 }
+
+/* --- Footer --- */
 
 .footer {
   display: flex;
@@ -45,5 +102,5 @@
   gap: var(--spacing-3);
   margin-top: var(--spacing-5);
   padding-top: var(--spacing-4);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
 }

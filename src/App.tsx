@@ -5,10 +5,17 @@ import { MealPlannerGrid } from "./features/MealPlanner/MealPlannerGrid";
 import { UserSelector } from "./features/UserManagement/UserSelector";
 import { ShoppingListButton } from "./features/ShoppingList/ShoppingListButton";
 import { ShoppingListModal } from "./features/ShoppingList/ShoppingListModal";
+import { AuthModal } from "./features/Auth/AuthModal";
+import { useAuth } from "./context/AuthContext";
 import { useAppHotkeys } from "./hooks/useAppHotkeys";
+import { signOut } from "firebase/auth";
+import { auth } from "./lib/firebase";
+import { Button } from "./components/Button/Button";
 
 function App() {
+  const { user } = useAuth();
   const [isShoppingListOpen, setIsShoppingListOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   useAppHotkeys();
 
@@ -20,8 +27,25 @@ function App() {
           <div className={styles.userSelectorContainer}>
             <UserSelector />
           </div>
-          <div className={styles.shoppingListButtonContainer}>
+          <div className={styles.headerRight}>
             <ShoppingListButton onClick={() => setIsShoppingListOpen(true)} />
+            {user ? (
+              <div className={styles.authUser}>
+                <span className={styles.authDisplayName}>
+                  {user.displayName || user.email}
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={() => signOut(auth)}
+                >
+                  Sign out
+                </Button>
+              </div>
+            ) : (
+              <Button variant="primary" onClick={() => setIsAuthOpen(true)}>
+                Sign in
+              </Button>
+            )}
           </div>
         </header>
 
@@ -38,6 +62,7 @@ function App() {
         isOpen={isShoppingListOpen}
         onClose={() => setIsShoppingListOpen(false)}
       />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </>
   );
 }

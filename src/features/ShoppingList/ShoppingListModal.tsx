@@ -1,63 +1,122 @@
-import React, { useMemo, useState } from "react"; // <-- Import useState
+import React, { useMemo, useState, useEffect } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
 import type {
   Ingredient,
   Meal,
   PlannedMeal,
-  Unit,
+  UnitRef,
+  MetricUnit,
+  ImperialUnit,
   IngredientCategory,
+  CustomUnit,
+  ShoppingListSettings,
 } from "../../types";
 import { CATEGORY_ORDER } from "../../types";
-import { useAppState } from "../../context/hooks";
+import { useAppState, useAppDispatch } from "../../context/hooks";
+import { useAuth } from "../../context/AuthContext";
+import { db } from "../../lib/firebase";
+import {
+  syncShoppingList,
+  toggleShoppingListItem,
+} from "../../lib/cloudSync";
+import type { FirestoreShoppingListItem } from "../../lib/firestoreTypes";
 import { Modal } from "../../components/Modal/Modal";
-import { Button } from "../../components/Button/Button"; // <-- Import Button
+import { Button } from "../../components/Button/Button";
 import styles from "./ShoppingList.module.css";
 
-// --- Date Formatting Helper ---
-/**
- * Formats an ISO date string (YYYY-MM-DD) to "Mon 14"
- * @param isoDate The date string to format
- */
-const formatDate = (isoDate: string): string => {
-  // Add T00:00:00 to ensure date is parsed in local time, not UTC
-  const date = new Date(isoDate + "T00:00:00");
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    day: "numeric",
-  });
+// --- Conversion maps ---
+
+const METRIC_TO_IMPERIAL: Partial<Record<MetricUnit, { factor: number; unit: ImperialUnit }>> = {
+  g:  { factor: 0.035274, unit: "oz" },
+  kg: { factor: 2.20462,  unit: "lb" },
+  ml: { factor: 0.033814, unit: "fl oz" },
+  l:  { factor: 2.11338,  unit: "pint" },
 };
 
-// --- Type Definitions for Aggregated List ---
+const IMPERIAL_TO_METRIC: Partial<Record<ImperialUnit, { factor: number; unit: MetricUnit }>> = {
+  oz:       { factor: 28.3495,  unit: "g" },
+  lb:       { factor: 453.592,  unit: "g" },
+  "fl oz":  { factor: 29.5735,  unit: "ml" },
+  pint:     { factor: 473.176,  unit: "ml" },
+};
+
+// --- Unit resolution ---
+
+interface ResolvedUnit {
+  displayQuantity: number;
+  displayUnit: string;
+}
+
+function resolveUnit(
+  unitRef: UnitRef,
+  quantity: number,
+  customUnits: CustomUnit[],
+  settings: ShoppingListSettings
+): ResolvedUnit {
+  if (unitRef.type === "core") {
+    const unit = unitRef.unit;
+
+    if (settings.unitSystem === "imperial") {
+      const conv = METRIC_TO_IMPERIAL[unit as MetricUnit];
+      if (conv) return { displayQuantity: quantity * conv.factor, displayUnit: conv.unit };
+    } else {
+      const conv = IMPERIAL_TO_METRIC[unit as ImperialUnit];
+      if (conv) return { displayQuantity: quantity * conv.factor, displayUnit: conv.unit };
+    }
+
+    return { displayQuantity: quantity, displayUnit: unit };
+  }
+
+  const cu = customUnits.find((c) => c.id === unitRef.customUnitId);
+  if (!cu) return { displayQuantity: quantity, displayUnit: "?" };
+
+  if (!settings.showCustomLabels && cu.metricEquivalent && cu.metricUnit) {
+    const rawQuantity = quantity * cu.metricEquivalent;
+    const tempRef: UnitRef = { type: "core", unit: cu.metricUnit };
+    return resolveUnit(tempRef, rawQuantity, customUnits, settings);
+  }
+
+  return { displayQuantity: quantity, displayUnit: cu.label };
+}
+
+// --- Date helper ---
+
+const formatDate = (isoDate: string): string => {
+  const date = new Date(isoDate + "T00:00:00");
+  return date.toLocaleDateString("en-US", { weekday: "short", day: "numeric" });
+};
+
+// --- Aggregation types ---
+
 interface AggregatedItemDetail {
   date: string;
   formattedDate: string;
   amount: number;
-  mealName: string; // <-- ADDED THIS BACK
+  mealName: string;
+  unitRef: UnitRef;
 }
+
 interface AggregatedItem {
   ingredientId: string;
   name: string;
   category: IngredientCategory;
-  perishable: boolean; // <-- NEW: Added this flag
+  perishable: boolean;
   totalQuantity: number;
-  unit: Unit;
+  unitRef: UnitRef;
   details: AggregatedItemDetail[];
 }
 
-type GroupedList = {
-  category: IngredientCategory;
-  items: AggregatedItem[];
-}[];
+type GroupedList = { category: IngredientCategory; items: AggregatedItem[] }[];
 
-// --- Aggregation Logic (FOR UI) ---
+// --- Aggregation logic ---
+
 const generateShoppingList = (
   plan: PlannedMeal[],
   meals: Meal[],
   allIngredients: Ingredient[],
   selectedDates: string[]
 ): GroupedList => {
-  if (selectedDates.length === 0) {
-    return [];
-  }
+  if (selectedDates.length === 0) return [];
 
   const filteredPlan = plan.filter((p) => selectedDates.includes(p.date));
   const aggMap = new Map<string, AggregatedItem>();
@@ -69,27 +128,26 @@ const generateShoppingList = (
     const multiplier = plannedMeal.assignedUsers.length / mealDetails.servings;
 
     for (const ingredient of mealDetails.ingredients) {
-      const ingredientId = ingredient.ingredientId;
+      const { ingredientId, unit: unitRef } = ingredient;
       const amountToAdd = ingredient.quantity * multiplier;
-
       const masterIng = allIngredients.find((i) => i.id === ingredientId);
       if (!masterIng) continue;
 
-      // --- UPDATED: Detail entry now includes mealName ---
       const detailEntry: AggregatedItemDetail = {
         date: plannedMeal.date,
         formattedDate: formatDate(plannedMeal.date),
         amount: amountToAdd,
-        mealName: mealDetails.name, // <-- ADDED THIS BACK
+        mealName: mealDetails.name,
+        unitRef,
       };
 
       if (!aggMap.has(ingredientId)) {
         aggMap.set(ingredientId, {
-          ingredientId: ingredientId,
+          ingredientId,
           name: masterIng.name,
           category: masterIng.category,
-          perishable: masterIng.perishable, // <-- NEW: Pass the flag
-          unit: ingredient.unit,
+          perishable: masterIng.perishable,
+          unitRef,
           totalQuantity: amountToAdd,
           details: [detailEntry],
         });
@@ -97,123 +155,193 @@ const generateShoppingList = (
         const existing = aggMap.get(ingredientId)!;
         existing.totalQuantity += amountToAdd;
 
-        // --- UPDATED LOGIC ---
-        // Check if an entry for this exact day AND meal already exists
         const existingDetail = existing.details.find(
-          (d) => d.date === plannedMeal.date && d.mealName === mealDetails.name // <-- UPDATED CHECK
+          (d) => d.date === plannedMeal.date && d.mealName === mealDetails.name
         );
-
         if (existingDetail) {
-          // It exists, just add to the amount
           existingDetail.amount += amountToAdd;
         } else {
-          // It doesn't exist, add a new detail entry
           existing.details.push(detailEntry);
         }
-        // --- END UPDATED LOGIC ---
       }
     }
   }
 
-  // Group by category
   const grouped = new Map<IngredientCategory, AggregatedItem[]>();
   for (const item of aggMap.values()) {
-    if (!grouped.has(item.category)) {
-      grouped.set(item.category, []);
-    }
+    if (!grouped.has(item.category)) grouped.set(item.category, []);
     grouped.get(item.category)!.push(item);
   }
 
-  // Convert to array and Sort by the defined CATEGORY_ORDER
-  const sortedGroups = Array.from(grouped.entries());
-
-  sortedGroups.sort(([catA], [catB]) => {
-    const indexA = CATEGORY_ORDER.indexOf(catA);
-    const indexB = CATEGORY_ORDER.indexOf(catB);
-    const finalIndexA = indexA === -1 ? Infinity : indexA;
-    const finalIndexB = indexB === -1 ? Infinity : indexB;
-    return finalIndexA - finalIndexB;
+  const sortedGroups = Array.from(grouped.entries()).sort(([catA], [catB]) => {
+    const iA = CATEGORY_ORDER.indexOf(catA);
+    const iB = CATEGORY_ORDER.indexOf(catB);
+    return (iA === -1 ? Infinity : iA) - (iB === -1 ? Infinity : iB);
   });
 
-  // Map to final structure
-  return sortedGroups.map(([category, items]) => ({
-    category,
-    items,
-  }));
+  return sortedGroups.map(([category, items]) => ({ category, items }));
 };
 
-// --- UPDATED: Text Generation for Clipboard (now PLAIN TEXT) ---
-// This function will now RE-AGGREGATE the data to match the export format
-const generateNotesText = (list: GroupedList): string => {
+// --- Text export ---
+
+const generateNotesText = (
+  list: GroupedList,
+  customUnits: CustomUnit[],
+  settings: ShoppingListSettings
+): string => {
   let text = "";
 
   for (const group of list) {
     for (const item of group.items) {
-      // --- NEW: Check if item is perishable ---
       if (item.perishable) {
-        // --- PERISHABLE: Use the original logic (breakdown by day) ---
-        // 1. Create a temp map to aggregate by date ONLY
-        const dayMap = new Map<
-          string,
-          { formattedDate: string; totalAmount: number }
-        >();
-
+        const dayMap = new Map<string, { formattedDate: string; totalAmount: number; unitRef: UnitRef }>();
         for (const detail of item.details) {
           if (!dayMap.has(detail.date)) {
-            dayMap.set(detail.date, {
-              formattedDate: detail.formattedDate,
-              totalAmount: 0,
-            });
+            dayMap.set(detail.date, { formattedDate: detail.formattedDate, totalAmount: 0, unitRef: detail.unitRef });
           }
           dayMap.get(detail.date)!.totalAmount += detail.amount;
         }
-        // --- End re-aggregate logic ---
-
-        // 2. Loop over the new re-aggregated map
         for (const data of dayMap.values()) {
-          // Format: amount unit item (date)
-          const line = `${data.totalAmount.toFixed(1)} ${item.unit} ${
-            item.name
-          } (${data.formattedDate})\n`; // Add newline
-          text += line;
+          const { displayQuantity, displayUnit } = resolveUnit(data.unitRef, data.totalAmount, customUnits, settings);
+          text += `${formatQuantity(displayQuantity)} ${displayUnit} ${item.name} (${data.formattedDate})\n`;
         }
       } else {
-        // --- NON-PERISHABLE: Use new logic (total sum) ---
-        const line = `${item.totalQuantity.toFixed(1)} ${item.unit} ${
-          item.name
-        }\n`;
-        text += line;
+        const { displayQuantity, displayUnit } = resolveUnit(item.unitRef, item.totalQuantity, customUnits, settings);
+        text += `${formatQuantity(displayQuantity)} ${displayUnit} ${item.name}\n`;
       }
-      // --- END NEW LOGIC ---
     }
   }
   return text.trim();
 };
 
-// --- The Component ---
+const formatQuantity = (n: number): string => {
+  return parseFloat(n.toFixed(2)).toString();
+};
+
+// --- Component ---
+
 interface ShoppingListModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
-  const { plan, meals, ingredients, selectedDates } = useAppState();
-  const [copied, setCopied] = useState(false); // <-- NEW state for copy feedback
+type SyncStatus = "idle" | "syncing" | "synced" | "error";
+
+export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, onClose }) => {
+  const { plan, meals, ingredients, customUnits, selectedDates, shoppingListSettings } = useAppState();
+  const dispatch = useAppDispatch();
+  const { user } = useAuth();
+
+  const [copied, setCopied] = useState(false);
+
+  // --- Sync state ---
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
+  const [activeListId, setActiveListId] = useState<string | null>(null);
+  // Live items from Firestore — used for checked state and for writing updates
+  const [syncedItems, setSyncedItems] = useState<FirestoreShoppingListItem[]>([]);
 
   const shoppingList = useMemo(
     () => generateShoppingList(plan, meals, ingredients, selectedDates),
     [plan, meals, ingredients, selectedDates]
   );
 
-  // --- Copy to Clipboard Handler (Unchanged) ---
+  // Reset sync when selected dates change (list is now stale)
+  useEffect(() => {
+    setActiveListId(null);
+    setSyncStatus("idle");
+    setSyncedItems([]);
+  }, [selectedDates]);
+
+  // Subscribe to Firestore when an active list is synced
+  useEffect(() => {
+    if (!activeListId) return;
+
+    const listRef = doc(db, "shoppingLists", activeListId);
+    const unsubscribe = onSnapshot(listRef, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      setSyncedItems(data.items ?? []);
+    });
+
+    return unsubscribe;
+  }, [activeListId]);
+
+  const updateSettings = (patch: Partial<ShoppingListSettings>) => {
+    dispatch({ type: "SET_SHOPPING_LIST_SETTINGS", payload: patch });
+  };
+
+  // --- Sync handler ---
+  const handleSync = async () => {
+    if (!user) return;
+    setSyncStatus("syncing");
+
+    const items: FirestoreShoppingListItem[] = shoppingList.flatMap((group) =>
+      group.items.map((item) => ({
+        id: item.ingredientId,
+        ingredientName: item.name,
+        category: item.category,
+        totalQuantity: item.totalQuantity,
+        unitRef: item.unitRef,
+        checked: false,
+        details: item.details.map((d) => ({
+          mealName: d.mealName,
+          quantity: d.amount,
+          unitRef: d.unitRef,
+        })),
+      }))
+    );
+
+    const listName =
+      selectedDates.length === 1
+        ? `Shopping — ${formatDate(selectedDates[0])}`
+        : `Shopping — ${formatDate(selectedDates[0])} to ${formatDate(selectedDates[selectedDates.length - 1])}`;
+
+    try {
+      const listId = await syncShoppingList(
+        user.uid,
+        listName,
+        items,
+        shoppingListSettings
+      );
+      setActiveListId(listId);
+      setSyncStatus("synced");
+    } catch (err) {
+      console.error("[ShoppingList] Sync failed:", err);
+      setSyncStatus("error");
+    }
+  };
+
+  // --- Item check/uncheck (synced mode) ---
+  const handleToggleItem = async (ingredientId: string) => {
+    if (!activeListId) return;
+    const current = syncedItems.find((i) => i.id === ingredientId);
+    const newChecked = !(current?.checked ?? false);
+
+    // Optimistic update
+    setSyncedItems((prev) =>
+      prev.map((item) =>
+        item.id === ingredientId ? { ...item, checked: newChecked } : item
+      )
+    );
+
+    try {
+      await toggleShoppingListItem(activeListId, syncedItems, ingredientId, newChecked);
+    } catch (err) {
+      console.error("[ShoppingList] Toggle failed:", err);
+      // Revert optimistic update on failure
+      setSyncedItems((prev) =>
+        prev.map((item) =>
+          item.id === ingredientId ? { ...item, checked: !newChecked } : item
+        )
+      );
+    }
+  };
+
+  // --- Copy to clipboard ---
   const handleCopyToClipboard = () => {
-    const textToCopy = generateNotesText(shoppingList);
+    const textToCopy = generateNotesText(shoppingList, customUnits, shoppingListSettings);
     if (!textToCopy) return;
 
-    // Use document.execCommand for iFrame compatibility
     const textArea = document.createElement("textarea");
     textArea.value = textToCopy;
     textArea.style.position = "fixed";
@@ -227,7 +355,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
       const successful = document.execCommand("copy");
       if (successful) {
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000); // Reset feedback after 2s
+        setTimeout(() => setCopied(false), 2000);
       }
     } catch (err) {
       console.error("Failed to copy text: ", err);
@@ -236,14 +364,59 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
     document.body.removeChild(textArea);
   };
 
+  const isSynced = syncStatus === "synced" && activeListId !== null;
+  const checkedMap = new Map(syncedItems.map((i) => [i.id, i.checked]));
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Shopping List">
       <div className={styles.contentWrapper}>
+
+        {/* Options panel */}
+        <div className={styles.optionsPanel}>
+          <div className={styles.optionGroup}>
+            <span className={styles.optionGroupLabel}>Units</span>
+            <label className={styles.radioLabel}>
+              <input
+                type="radio"
+                name="unitSystem"
+                value="metric"
+                checked={shoppingListSettings.unitSystem === "metric"}
+                onChange={() => updateSettings({ unitSystem: "metric" })}
+              />
+              Metric
+            </label>
+            <label className={styles.radioLabel}>
+              <input
+                type="radio"
+                name="unitSystem"
+                value="imperial"
+                checked={shoppingListSettings.unitSystem === "imperial"}
+                onChange={() => updateSettings({ unitSystem: "imperial" })}
+              />
+              Imperial
+            </label>
+          </div>
+          <div className={styles.optionGroup}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={shoppingListSettings.showCustomLabels}
+                onChange={(e) => updateSettings({ showCustomLabels: e.target.checked })}
+              />
+              Show custom unit labels
+            </label>
+          </div>
+          {isSynced && (
+            <div className={styles.syncBadge}>
+              Live sync active
+            </div>
+          )}
+        </div>
+
         <div className={styles.container}>
           {selectedDates.length === 0 && (
             <p className={styles.placeholder}>
-              Select one or more days on the planner (use Shift+Click for
-              multiple) to generate a shopping list.
+              Select one or more days on the planner (use Shift+Click for multiple) to generate a shopping list.
             </p>
           )}
           {shoppingList.map((group) => (
@@ -251,42 +424,52 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
               <h3 className={styles.categoryTitle}>{group.category}</h3>
               <ul className={styles.itemList}>
                 {group.items.map((item) => {
+                  const { displayQuantity, displayUnit } = resolveUnit(
+                    item.unitRef, item.totalQuantity, customUnits, shoppingListSettings
+                  );
                   const isSingleInstance = item.details.length === 1;
-                  const title = isSingleInstance
-                    ? item.name
-                    : `${item.name} (x${item.details.length})`;
-                  const dateDisplay = isSingleInstance
-                    ? item.details[0].formattedDate
-                    : "";
+                  const title = isSingleInstance ? item.name : `${item.name} (x${item.details.length})`;
+                  const dateDisplay = isSingleInstance ? item.details[0].formattedDate : "";
+                  const isChecked = isSynced && (checkedMap.get(item.ingredientId) ?? false);
 
                   return (
-                    <li key={item.ingredientId} className={styles.item}>
+                    <li
+                      key={item.ingredientId}
+                      className={`${styles.item} ${isChecked ? styles.itemChecked : ""}`}
+                    >
                       <details className={styles.accordion}>
                         <summary className={styles.itemSummary}>
-                          <span className={styles.itemName}>{title}</span>
+                          <span className={styles.itemName}>
+                            {isSynced && (
+                              <input
+                                type="checkbox"
+                                className={styles.syncCheckbox}
+                                checked={isChecked}
+                                onChange={() => handleToggleItem(item.ingredientId)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            )}
+                            {title}
+                          </span>
                           <span className={styles.itemDate}>{dateDisplay}</span>
                           <span className={styles.itemQuantity}>
-                            {item.totalQuantity.toFixed(1)} {item.unit}
+                            {formatQuantity(displayQuantity)} {displayUnit}
                           </span>
                         </summary>
                         <div className={styles.itemDetails}>
-                          {item.details.map((d, index) => (
-                            <div key={index} className={styles.detailRow}>
-                              <label className={styles.checklistLabel}>
-                                <input
-                                  type="checkbox"
-                                  className={styles.checkbox}
-                                />
-                                {/* --- UPDATED: Added meal name --- */}
-                                <span>
-                                  {d.formattedDate} ({d.mealName})
+                          {item.details.map((d, index) => {
+                            const detail = resolveUnit(d.unitRef, d.amount, customUnits, shoppingListSettings);
+                            return (
+                              <div key={index} className={styles.detailRow}>
+                                <span className={styles.checklistLabel}>
+                                  <span>{d.formattedDate} ({d.mealName})</span>
                                 </span>
-                              </label>
-                              <span className={styles.detailAmount}>
-                                {d.amount.toFixed(1)} {item.unit}
-                              </span>
-                            </div>
-                          ))}
+                                <span className={styles.detailAmount}>
+                                  {formatQuantity(detail.displayQuantity)} {detail.displayUnit}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </details>
                     </li>
@@ -297,8 +480,23 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({
           ))}
         </div>
       </div>
-      {/* --- NEW: Footer with Copy Button --- */}
+
       <div className={styles.footer}>
+        {user && (
+          <Button
+            variant="primary"
+            onClick={handleSync}
+            disabled={shoppingList.length === 0 || syncStatus === "syncing"}
+          >
+            {syncStatus === "syncing"
+              ? "Syncing…"
+              : syncStatus === "synced"
+              ? "Re-sync"
+              : syncStatus === "error"
+              ? "Sync failed — retry"
+              : "Sync to App"}
+          </Button>
+        )}
         <Button
           variant="secondary"
           onClick={handleCopyToClipboard}

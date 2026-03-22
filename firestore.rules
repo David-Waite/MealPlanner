@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Users ---
+    // Profiles are publicly readable (needed for username uniqueness checks and friend search).
+    // Only the account owner can write their own profile.
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // --- Recipes ---
+    match /recipes/{recipeId} {
+      // Owner has full access
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+
+      // Any authenticated user can create a recipe they own
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+
+      // Approved global recipes are publicly readable
+      allow read: if resource.data.globalStatus == "approved";
+
+      // Users explicitly listed in sharedWith can read
+      allow read: if request.auth != null
+        && resource.data.get("sharedWith", []).hasAny([request.auth.uid]);
+    }
+
+    // --- Friendships ---
+    // Both participants can read and update; creator must be a participant
+    match /friendships/{friendshipId} {
+      allow read, update: if request.auth != null
+        && resource.data.userIds.hasAny([request.auth.uid]);
+
+      allow create: if request.auth != null
+        && request.resource.data.userIds.hasAny([request.auth.uid]);
+    }
+
+    // --- Shopping Lists ---
+    // Owner only
+    match /shoppingLists/{listId} {
+      allow read, update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid;
+    }
+  }
+}

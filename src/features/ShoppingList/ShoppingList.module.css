@@ -1,13 +1,77 @@
 .container {
-  min-height: 300px;
+  min-height: 200px;
 }
 
 .contentWrapper {
-  /* Wraps content and footer */
   display: flex;
   flex-direction: column;
   gap: var(--spacing-4);
 }
+
+/* --- Options panel --- */
+
+.optionsPanel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-5);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+}
+
+.optionGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.optionGroupLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.radioLabel input[type="radio"] {
+  accent-color: #4c51bf;
+  cursor: pointer;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  accent-color: #4c51bf;
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+}
+
+/* --- Placeholder --- */
 
 .placeholder {
   color: var(--color-text-secondary);
@@ -16,28 +80,43 @@
   padding: var(--spacing-5);
 }
 
+/* --- Category groups --- */
+
 .categoryGroup {
-  margin-bottom: var(--spacing-5);
+  margin-bottom: var(--spacing-4);
 }
 
 .categoryTitle {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
   padding-bottom: var(--spacing-2);
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
   margin-bottom: var(--spacing-3);
-  color: var(--color-text-primary);
 }
 
 .itemList {
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
 }
 
+/* --- Item rows --- */
+
 .item {
-  background-color: var(--color-card-bg);
-  border-radius: var(--radius-sm);
-  margin-bottom: var(--spacing-2);
-  box-shadow: 0 1px 2px var(--color-card-shadow);
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: box-shadow 150ms ease;
+}
+
+.item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .accordion {
@@ -46,16 +125,16 @@
 
 .accordion summary {
   cursor: pointer;
-  list-style: none; /* Hide default triangle */
+  list-style: none;
   width: 100%;
 }
+
 .accordion summary::-webkit-details-marker {
-  display: none; /* Hide default triangle */
+  display: none;
 }
 
 .itemSummary {
   display: grid;
-  /* Make 3 columns: Name, Date, Amount */
   grid-template-columns: 1fr auto auto;
   gap: var(--spacing-3);
   align-items: center;
@@ -64,29 +143,33 @@
 }
 
 .itemName {
-  font-weight: 500;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-weight: 600;
+  font-size: 0.9rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .itemDate {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
 .itemQuantity {
-  font-weight: 600;
-  color: #4a90e2;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #4c51bf;
   white-space: nowrap;
   text-align: right;
 }
 
 .itemDetails {
-  border-top: 1px solid var(--color-bg-sidebar);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
   padding: var(--spacing-3) var(--spacing-4);
-  background-color: var(--color-bg);
+  background-color: #f8f9fc;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
@@ -97,7 +180,7 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--spacing-3);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
 
@@ -105,9 +188,14 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  /* Make it take up space, truncate if needed */
   flex-grow: 1;
   min-width: 0;
+}
+
+.checklistLabel input[type="checkbox"] {
+  accent-color: #4c51bf;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .checklistLabel span {
@@ -121,14 +209,53 @@
 }
 
 .detailAmount {
-  flex-shrink: 0; /* Don't let amount wrap */
+  flex-shrink: 0;
   padding-left: var(--spacing-2);
-  font-weight: 500;
+  font-weight: 600;
 }
+
+/* --- Sync badge --- */
+
+.syncBadge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2f855a;
+  background-color: #f0fff4;
+  border: 1px solid #9ae6b4;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+/* --- Sync checkbox (on item summary row) --- */
+
+.syncCheckbox {
+  accent-color: #4c51bf;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* --- Checked item --- */
+
+.itemChecked {
+  opacity: 0.5;
+}
+
+.itemChecked .itemName {
+  text-decoration: line-through;
+}
+
+/* --- Footer --- */
 
 .footer {
   display: flex;
   justify-content: flex-end;
+  gap: var(--spacing-3);
   padding-top: var(--spacing-4);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
 }

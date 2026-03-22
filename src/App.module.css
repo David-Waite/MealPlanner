@@ -35,10 +35,27 @@
   justify-content: center;
 }
 
-/* --- NEW --- */
-.shoppingListButtonContainer {
+.headerRight {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: var(--spacing-3);
+}
+
+.authUser {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.authDisplayName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 .sidebar {
