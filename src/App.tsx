@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import styles from "./App.module.css";
 import { MealLibrarySidebar } from "./features/MealLibrary/MealLibrarySidebar";
 import { MealPlannerGrid } from "./features/MealPlanner/MealPlannerGrid";
