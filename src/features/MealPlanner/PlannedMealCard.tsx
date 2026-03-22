@@ -1,6 +1,8 @@
 import React from "react";
 import type { PlannedMeal } from "../../types";
-import { useAppState, useAppDispatch } from "../../context/hooks"; // <-- Import dispatch
+import { useAppState, useAppDispatch } from "../../context/hooks";
+import { useAuth } from "../../context/AuthContext";
+import { deletePlanEntryFromCloud } from "../../lib/cloudSync";
 import styles from "./PlannedMealCard.module.css";
 
 interface PlannedMealCardProps {
@@ -10,8 +12,9 @@ interface PlannedMealCardProps {
 export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({
   plannedMeal,
 }) => {
-  const { meals, users, selectedPlannedMealInstanceId } = useAppState(); // <-- Get selected ID
-  const dispatch = useAppDispatch(); // <-- NEW
+  const { meals, users, selectedPlannedMealInstanceId } = useAppState();
+  const dispatch = useAppDispatch();
+  const { user } = useAuth();
 
   const mealDetails = meals.find((m) => m.id === plannedMeal.mealId);
   const assignedUsers = users.filter((u) =>
@@ -28,11 +31,14 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({
   };
 
   const handleRemoveClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop click from selecting the card
+    e.stopPropagation();
     dispatch({
       type: "REMOVE_PLANNED_MEAL",
       payload: { instanceId: plannedMeal.instanceId },
     });
+    if (user) {
+      deletePlanEntryFromCloud(user.uid, plannedMeal.instanceId).catch(console.error);
+    }
   };
 
   if (!mealDetails) {

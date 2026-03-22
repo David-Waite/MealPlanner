@@ -1,0 +1,276 @@
+/* --- Tabs --- */
+
+.tabs {
+  display: flex;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: var(--spacing-4);
+  gap: var(--spacing-1);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.tab:hover {
+  color: var(--color-text-primary);
+}
+
+.tabActive {
+  color: #4c51bf;
+  border-bottom-color: #4c51bf;
+}
+
+/* Count badge (grey) */
+.tabCount {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background-color: #e2e8f0;
+  color: #4a5568;
+  border-radius: 99px;
+  padding: 1px 6px;
+}
+
+/* Notification badge (red) */
+.tabBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background-color: #e53e3e;
+  color: #fff;
+  border-radius: 99px;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* --- Tab content area --- */
+
+.tabContent {
+  min-height: 180px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.empty {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: var(--spacing-5) 0;
+}
+
+.sectionLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* --- Friend rows (accepted) --- */
+
+.friendRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.friendAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #ebf4ff;
+  color: #4c51bf;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.friendInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.friendName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.friendHandle {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.sharingBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #276749;
+  background-color: #f0fff4;
+  border: 1px solid #9ae6b4;
+  border-radius: 99px;
+  padding: 1px 8px;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.shareToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.shareToggle input[type="checkbox"] {
+  accent-color: #4c51bf;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+/* --- Request rows --- */
+
+.requestRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.requestInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.requestName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.requestHandle {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.requestActions {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
+}
+
+.pendingBadge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #744210;
+  background-color: #fefcbf;
+  border: 1px solid #f6e05e;
+  border-radius: 99px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* --- Find tab search row --- */
+
+.searchRow {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: stretch;
+}
+
+.searchRow > :first-child {
+  flex: 1;
+}
+
+.searchResults {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+/* --- User rows (search results) --- */
+
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.userAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #f0fff4;
+  color: #276749;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.userInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.userName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.userHandle {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}

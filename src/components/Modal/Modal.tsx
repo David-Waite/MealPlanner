@@ -6,6 +6,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: "default" | "large";
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -13,6 +14,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
+  size = "default",
 }) => {
   if (!isOpen) {
     return null;
@@ -27,7 +29,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className={styles.backdrop} onClick={handleBackdropClick}>
-      <div className={styles.modal}>
+      <div className={`${styles.modal} ${size === "large" ? styles.modalLarge : ""}`}>
         <div className={styles.header}>
           <h2 className={styles.title}>{title}</h2>
           <button className={styles.closeButton} onClick={onClose}>

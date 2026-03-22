@@ -86,14 +86,19 @@ export const MealCard: React.FC<MealCardProps> = ({
         {servingsToPlan}
       </span>
 
-      <img
-        src={meal.photoUrl}
-        alt={meal.name}
-        className={styles.cardImage}
-        draggable="false"
-      />
+      {meal.photoUrl && (
+        <img
+          src={meal.photoUrl}
+          alt={meal.name}
+          className={styles.cardImage}
+          draggable="false"
+        />
+      )}
       <div className={styles.cardContent}>
         <h3 className={styles.cardTitle}>{meal.name}</h3>
+        {meal.ownerDisplayName && (
+          <span className={styles.cardAttribution}>by {meal.ownerDisplayName}</span>
+        )}
         {meal.tags && meal.tags.length > 0 && (
           <div className={styles.cardTags}>
             {meal.tags.map((tag) => (
@@ -102,6 +107,9 @@ export const MealCard: React.FC<MealCardProps> = ({
               </span>
             ))}
           </div>
+        )}
+        {meal.globalStatus === "pending" && (
+          <span className={styles.pendingBadge}>Pending review</span>
         )}
       </div>
     </div>

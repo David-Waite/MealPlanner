@@ -49,6 +49,13 @@ export const appReducer = (state: AppState, action: Action): AppState => {
     case "SET_SELECTED_INSTANCE":
       return { ...state, selectedPlannedMealInstanceId: action.payload };
 
+    // --- Ingredient Actions ---
+    case "ADD_INGREDIENT":
+      return {
+        ...state,
+        ingredients: [...state.ingredients, action.payload],
+      };
+
     // --- Custom Unit Actions ---
     case "ADD_CUSTOM_UNIT":
       return { ...state, customUnits: [...state.customUnits, action.payload] };
@@ -84,6 +91,7 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         ...state,
         meals: action.payload.meals,
         customUnits: action.payload.customUnits,
+        plan: action.payload.plan,
       };
 
     default:

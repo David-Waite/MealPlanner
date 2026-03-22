@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useAppState, useAppDispatch } from "../../context/hooks";
+import { useAuth } from "../../context/AuthContext";
+import { savePlanEntryToCloud } from "../../lib/cloudSync";
 import { PlannedMealCard } from "./PlannedMealCard";
-import styles from "./MealPlannerGrid.module.css"; // We'll add styles here
+import styles from "./MealPlannerGrid.module.css";
 
 interface MealSlotProps {
   date: string;
@@ -11,6 +13,7 @@ interface MealSlotProps {
 export const MealSlot: React.FC<MealSlotProps> = ({ date, mealType }) => {
   const { plan, selectedUserIds } = useAppState();
   const dispatch = useAppDispatch();
+  const { user } = useAuth();
   const [isHovering, setIsHovering] = useState(false);
 
   // Filter the plan to find meals for this slot
@@ -47,6 +50,9 @@ export const MealSlot: React.FC<MealSlotProps> = ({ date, mealType }) => {
       };
 
       dispatch({ type: "ADD_PLANNED_MEAL", payload: newPlannedMeal });
+      if (user) {
+        savePlanEntryToCloud(user.uid, newPlannedMeal).catch(console.error);
+      }
     }
   };
 

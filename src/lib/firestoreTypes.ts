@@ -37,7 +37,40 @@ export const userConverter: FirestoreDataConverter<FirestoreUser> = {
 };
 
 // ---------------------------------------------------------------------------
-// Recipe document  (recipes/{recipeId})
+// PlannedMeal document  (users/{userId}/plan/{instanceId})
+// ---------------------------------------------------------------------------
+
+export interface FirestorePlannedMeal {
+  instanceId: string;
+  mealId: string;
+  date: string;
+  mealType: string;
+  assignedUsers: string[];
+}
+
+export const plannedMealConverter: FirestoreDataConverter<FirestorePlannedMeal> = {
+  toFirestore(meal: FirestorePlannedMeal): DocumentData {
+    const { instanceId, ...data } = meal;
+    return data;
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot,
+    options: SnapshotOptions
+  ): FirestorePlannedMeal {
+    const data = snapshot.data(options);
+    return {
+      instanceId: snapshot.id,
+      mealId: data.mealId,
+      date: data.date,
+      mealType: data.mealType,
+      assignedUsers: data.assignedUsers ?? [],
+    };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Recipe document  (users/{userId}/recipes/{recipeId})
+// Also used for globalRecipes/{recipeId} — same shape.
 // ---------------------------------------------------------------------------
 
 export type RecipeVisibility = "private" | "friends" | "global";
@@ -100,11 +133,14 @@ export const recipeConverter: FirestoreDataConverter<FirestoreRecipe> = {
 };
 
 // ---------------------------------------------------------------------------
-// Shopping list document  (shoppingLists/{listId})
+// Shopping list document  (users/{userId}/shoppingLists/{listId})
+// ownerId is implicit in the subcollection path — not stored in the document.
 // ---------------------------------------------------------------------------
 
 export interface FirestoreShoppingListItemDetail {
   mealName: string;
+  date: string;           // ISO date string e.g. "2026-03-25"
+  formattedDate: string;  // Human-readable e.g. "Tue 25"
   quantity: number;
   unitRef: UnitRef;
 }
@@ -116,12 +152,13 @@ export interface FirestoreShoppingListItem {
   totalQuantity: number;
   unitRef: UnitRef;
   checked: boolean;
+  lastDate: string;           // Latest ISO date this ingredient is needed
+  lastFormattedDate: string;  // Human-readable version of lastDate
   details: FirestoreShoppingListItemDetail[];
 }
 
 export interface FirestoreShoppingList {
   id: string;
-  ownerId: string;
   name: string;
   syncedAt: Timestamp;
   status: "active" | "archived";
@@ -145,7 +182,6 @@ export const shoppingListConverter: FirestoreDataConverter<FirestoreShoppingList
       const data = snapshot.data(options);
       return {
         id: snapshot.id,
-        ownerId: data.ownerId,
         name: data.name,
         syncedAt: data.syncedAt,
         status: data.status ?? "active",
@@ -160,6 +196,7 @@ export const shoppingListConverter: FirestoreDataConverter<FirestoreShoppingList
 
 // ---------------------------------------------------------------------------
 // Friendship document  (friendships/{friendshipId})
+// Top-level collection — bidirectional queries require this.
 // ---------------------------------------------------------------------------
 
 export type FriendshipStatus = "pending" | "accepted" | "declined";

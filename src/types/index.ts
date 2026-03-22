@@ -62,6 +62,9 @@ export interface RecipeIngredient {
   unit: UnitRef;
 }
 
+export type GlobalStatus = "none" | "pending" | "approved" | "rejected";
+export type RecipeVisibility = "private" | "friends" | "global";
+
 export interface Meal {
   id: string;
   name: string;
@@ -69,8 +72,25 @@ export interface Meal {
   servings: number;
   ingredients: RecipeIngredient[];
   tags: string[];
-  localUpdatedAt?: number; // client Date.now() — used for cloud merge conflict resolution
+  description?: string;
+  instructions?: string[];
+  globalStatus?: GlobalStatus;
+  visibility?: RecipeVisibility;
+  bookmarkedFromId?: string | null;
+  originalOwnerId?: string | null;
+  rejectionReason?: string | null;
+  ownerDisplayName?: string;        // resolved at read time for friend/global/bookmarked cards
+  localUpdatedAt?: number;          // client Date.now() — used for cloud merge conflict resolution
+  sharedWith?: string[];            // userIds that can read this recipe
 }
+
+// Predefined tag taxonomy (EPIC-3-3)
+export const RECIPE_TAGS: Record<string, string[]> = {
+  "Cuisine":   ["Italian", "Asian", "Mexican", "American", "Mediterranean"],
+  "Diet":      ["Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free"],
+  "Meal Type": ["Breakfast", "Lunch", "Dinner", "Snack"],
+  "Cook Time": ["Under 30 min", "Under 1 hour", "Over 1 hour"],
+};
 
 export interface User {
   id: string;

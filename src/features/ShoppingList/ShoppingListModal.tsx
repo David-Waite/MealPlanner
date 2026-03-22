@@ -256,7 +256,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
   useEffect(() => {
     if (!activeListId) return;
 
-    const listRef = doc(db, "shoppingLists", activeListId);
+    const listRef = doc(db, "users", user!.uid, "shoppingLists", activeListId);
     const unsubscribe = onSnapshot(listRef, (snap) => {
       if (!snap.exists()) return;
       const data = snap.data();
@@ -276,19 +276,29 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
     setSyncStatus("syncing");
 
     const items: FirestoreShoppingListItem[] = shoppingList.flatMap((group) =>
-      group.items.map((item) => ({
-        id: item.ingredientId,
-        ingredientName: item.name,
-        category: item.category,
-        totalQuantity: item.totalQuantity,
-        unitRef: item.unitRef,
-        checked: false,
-        details: item.details.map((d) => ({
-          mealName: d.mealName,
-          quantity: d.amount,
-          unitRef: d.unitRef,
-        })),
-      }))
+      group.items.map((item) => {
+        const sortedDetails = [...item.details].sort((a, b) =>
+          a.date.localeCompare(b.date)
+        );
+        const lastDetail = sortedDetails[sortedDetails.length - 1];
+        return {
+          id: item.ingredientId,
+          ingredientName: item.name,
+          category: item.category,
+          totalQuantity: item.totalQuantity,
+          unitRef: item.unitRef,
+          checked: false,
+          lastDate: lastDetail.date,
+          lastFormattedDate: lastDetail.formattedDate,
+          details: sortedDetails.map((d) => ({
+            mealName: d.mealName,
+            date: d.date,
+            formattedDate: d.formattedDate,
+            quantity: d.amount,
+            unitRef: d.unitRef,
+          })),
+        };
+      })
     );
 
     const listName =
@@ -325,7 +335,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
     );
 
     try {
-      await toggleShoppingListItem(activeListId, syncedItems, ingredientId, newChecked);
+      await toggleShoppingListItem(user!.uid, activeListId, syncedItems, ingredientId, newChecked);
     } catch (err) {
       console.error("[ShoppingList] Toggle failed:", err);
       // Revert optimistic update on failure

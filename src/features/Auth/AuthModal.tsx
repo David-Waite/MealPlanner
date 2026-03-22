@@ -6,8 +6,8 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
-import { migrateLocalToCloud, syncFromCloud, CLOUD_SYNCED_KEY } from "../../lib/cloudSync";
-import { useAppState, useAppDispatch } from "../../context/hooks";
+import { migrateLocalToCloud } from "../../lib/cloudSync";
+import { useAppState } from "../../context/hooks";
 import { Modal } from "../../components/Modal/Modal";
 import { Button } from "../../components/Button/Button";
 import { Input } from "../../components/Form/Input";
@@ -23,7 +23,6 @@ type Tab = "signin" | "signup";
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const state = useAppState();
-  const dispatch = useAppDispatch();
 
   const [tab, setTab] = useState<Tab>("signin");
   const [loading, setLoading] = useState(false);
@@ -47,24 +46,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   // --- Sign In ---
+  // Cloud sync is handled automatically by AppStateContext via onAuthStateChanged.
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     clearError();
     try {
-      const credential = await signInWithEmailAndPassword(
-        auth,
-        signInEmail,
-        signInPassword
-      );
-      const uid = credential.user.uid;
-
-      // Only sync if this device hasn't synced for this account yet
-      if (localStorage.getItem(CLOUD_SYNCED_KEY) !== uid) {
-        const merged = await syncFromCloud(uid, state.meals, state.customUnits);
-        dispatch({ type: "MERGE_CLOUD_DATA", payload: merged });
-      }
-
+      await signInWithEmailAndPassword(auth, signInEmail, signInPassword);
       onClose();
     } catch (err: any) {
       console.error("[AuthModal] Sign in error:", err);

@@ -1,106 +1,667 @@
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-3);
+/* ==========================================================================
+   Backdrop + container
+   ========================================================================== */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 30, 66, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
 }
 
-.subtitle {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  margin-top: var(--spacing-5);
-  margin-bottom: var(--spacing-3);
-  padding-bottom: var(--spacing-2);
+.container {
+  width: calc(100vw - 48px);
+  max-width: 1080px;
+  height: calc(100vh - 48px);
+  max-height: 920px;
+  background: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.form {
+  display: contents;
+}
+
+/* ==========================================================================
+   DESKTOP LAYOUT  (≥ 769px)
+   ========================================================================== */
+
+.desktopLayout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mobileLayout {
+  display: none;
+}
+
+/* ── Fixed header ── */
+
+.dHeader {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 60px;
+  background: #fff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.07);
 }
 
-/* --- Ingredient list --- */
+.dTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
 
-.ingredientList {
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  transition: background 150ms ease, color 150ms ease;
+  padding: 0;
+}
+
+.closeBtn:hover {
+  background: #f0f2f8;
+  color: var(--color-text-primary);
+}
+
+/* ── Fixed hero ── */
+
+.dHero {
+  flex-shrink: 0;
+  padding: 20px 28px 16px;
+  background: #f8f9fc;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+/* ── Fixed tab bar ── */
+
+.dTabBar {
+  flex-shrink: 0;
+  display: flex;
+  padding: 0 28px;
+  background: #f8f9fc;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.07);
+}
+
+.dTabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #8a96a8;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 150ms ease, border-color 150ms ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.dTabBtn:hover { color: var(--color-text-primary); }
+
+.dTabBtnActive {
+  color: #4c51bf;
+  border-bottom-color: #4c51bf;
+}
+
+.tabPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.07);
+  color: #8a96a8;
+}
+
+.tabPillActive {
+  background: rgba(76, 81, 191, 0.14);
+  color: #4c51bf;
+}
+
+/* ── Scrollable area ── */
+
+.dScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  background: #f8f9fc;
+}
+
+/* ── Fixed footer ── */
+
+.dFooter {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 28px;
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* ==========================================================================
+   MOBILE LAYOUT  (≤ 768px)  — full-screen iPhone-style wizard
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .container {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .desktopLayout { display: none; }
+
+  .mobileLayout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+}
+
+/* ── Mobile header ── */
+
+.mHeader {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.mStepCounter {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #a0aec0;
+  min-width: 36px;
+}
+
+.mStepTitle {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ── Progress dots ── */
+
+.mDots {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.mDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  border: none;
+  background: #e2e8f0;
+  cursor: pointer;
+  padding: 0;
+  transition: all 250ms ease;
+}
+
+.mDotDone {
+  background: rgba(76, 81, 191, 0.35);
+  width: 8px;
+}
+
+.mDotActive {
+  background: #4c51bf;
+  width: 24px;
+}
+
+/* ── Slide area ── */
+
+.mSlider {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.mSlide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  transition: transform 380ms cubic-bezier(0.4, 0, 0.2, 1);
+  background: #f8f9fc;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mSlideInner {
+  padding: 20px 16px 24px;
+  min-height: 100%;
+}
+
+/* ── Mobile footer nav ── */
+
+.mFooter {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.mNavBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 20px;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 150ms ease;
+}
+
+.mNavBack {
+  background: #f0f2f8;
+  color: #4a5568;
+}
+
+.mNavBack:hover:not(:disabled) { background: #e2e8f0; }
+
+.mNavBack:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.mNavNext {
+  background: #4c51bf;
+  color: #fff;
+  margin-left: auto;
+}
+
+.mNavNext:hover { background: #434190; }
+
+.mNavSave {
+  background: #38a169;
+  color: #fff;
+  margin-left: auto;
+}
+
+.mNavSave:hover:not(:disabled) { background: #2f855a; }
+.mNavSave:disabled { opacity: 0.5; cursor: default; }
+
+/* ==========================================================================
+   Hero section  (shared between desktop + mobile)
+   ========================================================================== */
+
+.hero {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.heroCompact {
+  grid-template-columns: 160px 1fr;
+  gap: 14px;
+}
+
+/* ---------- Photo zone ---------- */
+
+.photoZone {
+  position: relative;
+  height: 220px;
+  border-radius: 14px;
+  border: 2px dashed rgba(0, 0, 0, 0.13);
+  background: #f0f2f8;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 160ms ease, background 160ms ease;
+  user-select: none;
+}
+
+.heroCompact .photoZone {
+  height: 200px;
+}
+
+.photoZone:hover { border-color: #4c51bf; background: #eef2ff; }
+.photoZoneDragging { border-color: #4c51bf; background: #eef2ff; box-shadow: 0 0 0 4px rgba(76, 81, 191, 0.12); }
+.photoZoneHasPhoto { border: none; }
+
+.photoPreview { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.photoEmpty {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2);
-  margin-bottom: var(--spacing-3);
+  align-items: center;
+  gap: 7px;
+  pointer-events: none;
 }
+
+.photoEmptyIcon { width: 34px; height: 34px; color: #c0c8d8; }
+.photoEmptyTitle { font-size: 0.82rem; font-weight: 700; color: #8a96a8; }
+.photoEmptyHint { font-size: 0.71rem; color: #b0bac8; text-align: center; padding: 0 8px; }
+
+.photoHoverOverlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 20px 10px 10px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.5));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.photoZone:hover .photoHoverOverlay { opacity: 1; }
+
+.uploadOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.48);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.uploadProgressBar { width: 76%; height: 4px; background: rgba(255,255,255,0.28); border-radius: 99px; overflow: hidden; }
+.uploadBarFill { height: 100%; background: #fff; border-radius: 99px; transition: width 80ms linear; }
+.uploadPct { font-size: 0.875rem; font-weight: 700; color: #fff; }
+.hiddenInput { display: none; }
+
+/* ---------- Basic info ---------- */
+
+.basicInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.fieldGrow { flex: 1; }
+
+.fieldLabel {
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a96a8;
+}
+
+.optional { font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.8; }
+
+.nameInput {
+  width: 100%;
+  padding: 10px 13px;
+  font-size: 0.975rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--color-text-primary);
+  box-sizing: border-box;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.nameInput:focus { outline: none; border-color: #4c51bf; box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1); }
+.nameInput::placeholder { font-weight: 400; color: #c0c8d8; }
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  overflow: hidden;
+  background: #fff;
+  width: fit-content;
+}
+.stepperBtn {
+  width: 36px; height: 36px; border: none; background: none; cursor: pointer;
+  font-size: 1.2rem; color: #4c51bf; display: flex; align-items: center; justify-content: center;
+  transition: background 150ms ease; flex-shrink: 0; line-height: 1;
+}
+.stepperBtn:hover { background: #eef2ff; }
+.stepperVal {
+  min-width: 42px; text-align: center; font-size: 0.9rem; font-weight: 700;
+  color: var(--color-text-primary);
+  border-left: 1px solid rgba(0,0,0,0.08); border-right: 1px solid rgba(0,0,0,0.08);
+  padding: 0 6px; line-height: 34px;
+}
+
+.descTextarea {
+  width: 100%;
+  flex: 1;
+  min-height: 80px;
+  padding: 9px 13px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: none;
+  background: #fff;
+  color: var(--color-text-primary);
+  box-sizing: border-box;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  line-height: 1.5;
+}
+.descTextarea:focus { outline: none; border-color: #4c51bf; box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.1); }
+.descTextarea::placeholder { color: #c0c8d8; }
+
+/* ==========================================================================
+   Shared tab panel styles
+   ========================================================================== */
+
+.tabPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------- Ingredients ---------- */
+
+.ingredientList { display: flex; flex-direction: column; gap: 6px; }
 
 .ingredientRow {
   display: grid;
-  grid-template-columns: 2fr 80px 110px 36px;
-  gap: var(--spacing-2);
+  grid-template-columns: 2fr 76px 106px 30px;
+  gap: 6px;
   align-items: center;
-  background-color: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.07);
+  background: #fff;
+  border: 1.5px solid rgba(0, 0, 0, 0.07);
   border-radius: 10px;
-  padding: var(--spacing-2) var(--spacing-2);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: box-shadow 150ms ease, border-color 150ms ease;
+  padding: 7px 9px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
+.ingredientRow:focus-within { border-color: rgba(76,81,191,0.3); box-shadow: 0 0 0 3px rgba(76,81,191,0.07); }
 
-.ingredientRow:focus-within {
-  box-shadow: 0 0 0 2px rgba(76, 81, 191, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
-  border-color: rgba(76, 81, 191, 0.3);
+.qtyInput { text-align: center; }
+.unitSel { flex-shrink: 0; }
+
+.removeBtn {
+  width: 28px; height: 28px; border: none; background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; color: #c0c8d8; padding: 0;
+  transition: background 150ms ease, color 150ms ease; flex-shrink: 0;
 }
-
-.quantityInput {
-  text-align: center;
-}
-
-.unitSelect {
-  flex-shrink: 0;
-}
-
-/* --- Custom unit creator --- */
+.removeBtn:hover { background: #fff1f1; color: #e53e3e; }
 
 .customUnitCreator {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-3) var(--spacing-3);
-  margin-top: 2px;
-  background-color: rgba(76, 81, 191, 0.04);
-  border: 1px dashed rgba(76, 81, 191, 0.3);
-  border-radius: 10px;
-  flex-wrap: wrap;
+  display: flex; align-items: center; gap: 6px; padding: 10px 12px; margin-top: 2px;
+  background: rgba(76,81,191,0.04); border: 1.5px dashed rgba(76,81,191,0.25);
+  border-radius: 10px; flex-wrap: wrap;
 }
+.cuLabel { font-size: 0.75rem; font-weight: 700; color: #4c51bf; white-space: nowrap; }
+.cuLabelInput { width: 120px; flex-shrink: 0; }
+.cuEquivInput { width: 130px; flex-shrink: 0; }
+.cuMetricSel { width: 72px; flex-shrink: 0; }
 
-.customUnitLabel {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #4c51bf;
-  white-space: nowrap;
-  letter-spacing: 0.01em;
+.addRowBtn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 10px; border: 1.5px dashed rgba(0,0,0,0.13);
+  border-radius: 10px; background: none; cursor: pointer;
+  font-size: 0.84rem; font-weight: 600; color: #8a96a8;
+  font-family: inherit; transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
 }
+.addRowBtn:hover { border-color: #4c51bf; color: #4c51bf; background: #eef2ff; }
 
-.customUnitLabelInput {
-  width: 120px;
-  flex-shrink: 0;
+/* ---------- Instructions ---------- */
+
+.instructionList { display: flex; flex-direction: column; gap: 6px; }
+
+.instructionRow {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; border: 1.5px solid rgba(0,0,0,0.07);
+  border-radius: 10px; padding: 8px 10px;
+  transition: border-color 150ms ease;
 }
+.instructionRow:focus-within { border-color: rgba(76,81,191,0.3); }
 
-.customUnitEquivInput {
-  width: 130px;
-  flex-shrink: 0;
+.stepBadge {
+  width: 22px; height: 22px; border-radius: 50%; background: #4c51bf; color: #fff;
+  font-size: 0.67rem; font-weight: 800; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0;
 }
-
-.customUnitMetricSelect {
-  width: 72px;
-  flex-shrink: 0;
+.stepInput { flex: 1; }
+.stepActions { display: flex; gap: 2px; flex-shrink: 0; }
+.stepBtn {
+  width: 26px; height: 26px; border: 1px solid rgba(0,0,0,0.09);
+  border-radius: 6px; background: #f5f7fb; color: #8a96a8; font-size: 0.8rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  padding: 0; transition: background 100ms ease, color 100ms ease;
 }
+.stepBtn:hover:not(:disabled) { background: #e8ecf5; color: var(--color-text-primary); }
+.stepBtn:disabled { opacity: 0.28; cursor: default; }
+.stepBtnDanger:hover:not(:disabled) { background: #fff1f1; color: #e53e3e; border-color: #fecaca; }
 
-/* --- Add ingredient button --- */
+/* ---------- Tags ---------- */
 
-.addIngredientBtn {
-  width: 100%;
+.tagGroups { display: flex; flex-direction: column; gap: 20px; }
+.tagGroup { display: flex; flex-direction: column; gap: 8px; }
+.tagGroupLabel { font-size: 0.67rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8a96a8; }
+.tagChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tagChip {
+  padding: 5px 13px; border-radius: 99px; font-size: 0.8rem; font-weight: 500;
+  background: #fff; color: #718096; border: 1.5px solid rgba(0,0,0,0.09);
+  cursor: pointer; transition: all 120ms ease; font-family: inherit;
 }
+.tagChip:hover { border-color: #4c51bf; color: #4c51bf; background: #eef2ff; }
+.tagChipActive { background: #4c51bf; color: #fff; border-color: #4c51bf; }
+.tagChipActive:hover { background: #434190; border-color: #434190; }
 
-/* --- Footer --- */
+/* ---------- Sharing ---------- */
 
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-3);
-  margin-top: var(--spacing-5);
-  padding-top: var(--spacing-4);
-  border-top: 1px solid rgba(0, 0, 0, 0.07);
+.sectionMeta {
+  font-size: 0.67rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #8a96a8; margin: 0 0 10px;
 }
+.sharingBlock { display: flex; flex-direction: column; }
+.friendList { display: flex; flex-direction: column; gap: 6px; }
+.friendRow {
+  display: flex; align-items: center; gap: 10px; font-size: 0.875rem; font-weight: 500;
+  color: var(--color-text-primary); cursor: pointer; padding: 10px 14px;
+  background: #fff; border: 1.5px solid rgba(0,0,0,0.07); border-radius: 9px;
+  transition: border-color 150ms ease;
+}
+.friendRow:hover { border-color: rgba(76,81,191,0.3); }
+.friendRow input[type="checkbox"] { accent-color: #4c51bf; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+
+.globalBlock {
+  margin-top: 20px; padding: 18px; background: rgba(76,81,191,0.03);
+  border: 1.5px solid rgba(76,81,191,0.12); border-radius: 12px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.globalHint { font-size: 0.82rem; color: #8a96a8; margin: 0; line-height: 1.5; }
+.statusRow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; font-size: 0.71rem; font-weight: 700; letter-spacing: 0.04em; }
+.badge_approved { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.badge_pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge_rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.rejectionNote { font-size: 0.8rem; color: #991b1b; }
+.globalErrors { margin: 0; padding-left: 18px; font-size: 0.82rem; color: #c53030; }
+.globalErrors li { margin-bottom: 3px; }
+.emptyNote { font-size: 0.875rem; color: #8a96a8; text-align: center; padding: 32px 0; margin: 0; }
+
+/* ==========================================================================
+   Ingredient Combobox  (used by IngredientCombobox.tsx)
+   ========================================================================== */
+
+.ingredientCombobox { position: relative; flex: 1; min-width: 0; }
+.comboboxDropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff; border: 1px solid var(--color-border);
+  border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 200; overflow: hidden;
+}
+.comboboxList { max-height: 200px; overflow-y: auto; }
+.comboboxOption {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 8px 12px; text-align: left; background: none;
+  border: none; cursor: pointer; font-size: 0.875rem; color: var(--color-text-primary);
+  gap: 8px; font-family: inherit;
+}
+.comboboxOption:hover { background: #f5f6fb; }
+.comboboxOptionSelected { background: #eef2ff; font-weight: 600; }
+.comboboxOptionCategory { font-size: 0.72rem; color: var(--color-text-secondary); white-space: nowrap; flex-shrink: 0; }
+.comboboxEmpty { padding: 10px 12px; font-size: 0.875rem; color: var(--color-text-secondary); }
+.comboboxCreateBtn {
+  display: block; width: 100%; padding: 8px 12px; text-align: left; background: none;
+  border: none; border-top: 1px solid var(--color-border); cursor: pointer;
+  font-size: 0.875rem; font-weight: 600; color: #4c51bf; font-family: inherit;
+}
+.comboboxCreateBtn:hover { background: #eef2ff; }
+.comboboxCreateForm { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.comboboxCreateTitle { font-size: 0.72rem; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.07em; }
+.comboboxPerishable { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer; }
+.comboboxCreateActions { display: flex; gap: 8px; }

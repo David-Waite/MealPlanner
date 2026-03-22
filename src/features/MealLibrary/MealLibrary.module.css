@@ -324,6 +324,80 @@
   color: #718096;
 }
 
+/* --- Tab switcher --- */
+
+.tabRow {
+  display: flex;
+  gap: var(--spacing-1);
+  background-color: rgba(0, 0, 0, 0.04);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.tabBtn {
+  flex: 1;
+  padding: 5px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.tabBtn:hover {
+  color: var(--color-text-primary);
+}
+
+.tabBtnActive {
+  background-color: #ffffff;
+  color: #4c51bf;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Friend meal card (read-only) --- */
+
+.friendMealCard {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.friendMealImage {
+  width: 100%;
+  aspect-ratio: 268 / 140;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.friendMealContent {
+  padding: 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.friendMealName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1.3;
+}
+
+.friendMealAttribution {
+  font-size: 0.75rem;
+  color: #718096;
+  font-style: italic;
+}
+
 /* --- Card Tags --- */
 .cardTags {
   display: flex;
@@ -340,5 +414,103 @@
   padding: 1px 6px;
   border-radius: 4px;
   border: 1px solid #edf2f7;
+}
+
+.cardAttribution {
+  font-size: 0.72rem;
+  color: #718096;
+  font-style: italic;
+  margin-top: 1px;
+  display: block;
+}
+
+.pendingBadge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* --- Discover card --- */
+
+.discoverCard {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+
+.discoverCard:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.07),
+    0 10px 28px rgba(0, 0, 0, 0.1);
+}
+
+.discoverCardImage {
+  width: 100%;
+  aspect-ratio: 268 / 140;
+  object-fit: cover;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.discoverCardContent {
+  padding: 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.discoverCardName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1.3;
+}
+
+.discoverCardAttribution {
+  font-size: 0.72rem;
+  color: #718096;
+  font-style: italic;
+}
+
+.discoverCardFooter {
+  padding: 6px 8px 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bookmarkBtn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: rgba(76, 81, 191, 0.07);
+  color: #4c51bf;
+  border: 1px solid rgba(76, 81, 191, 0.2);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.bookmarkBtn:hover {
+  background: rgba(76, 81, 191, 0.14);
+  border-color: rgba(76, 81, 191, 0.4);
+}
+
+.bookmarkBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
