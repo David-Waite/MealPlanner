@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { useAppState, useAppDispatch } from "../../context/hooks";
 import { useAuth } from "../../context/AuthContext";
 import { savePlanEntryToCloud, saveSnackToCloud } from "../../lib/cloudSync";
-import { PlannedMealCard } from "./PlannedMealCard";
-import { PlannedSnackCard } from "./PlannedSnackCard";
+import { PlannedItemCard } from "./PlannedItemCard";
 import type { UnitRef } from "../../types";
 import styles from "./MealPlannerGrid.module.css";
 
@@ -35,19 +34,19 @@ export const MealSlot: React.FC<MealSlotProps> = ({ date, mealType }) => {
     const data = e.dataTransfer.getData("text/plain");
 
     if (data.startsWith("snack:")) {
-      // ── Snack drop ──
       const ingredientId = data.slice(6);
       const ingredient = ingredients.find((i) => i.id === ingredientId);
       if (!ingredient) return;
 
-      // Default unit: first custom unit for this ingredient, or "unit"
-      const ingCustomUnits = (ingredient.customUnits ?? []).length > 0
-        ? ingredient.customUnits!
-        : customUnits.filter((cu) => cu.ingredientId === ingredientId);
+      const ingCustomUnits =
+        (ingredient.customUnits ?? []).length > 0
+          ? ingredient.customUnits!
+          : customUnits.filter((cu) => cu.ingredientId === ingredientId);
 
-      const defaultUnit: UnitRef = ingCustomUnits.length > 0
-        ? { type: "custom", customUnitId: ingCustomUnits[0].id }
-        : { type: "core", unit: "unit" };
+      const defaultUnit: UnitRef =
+        ingCustomUnits.length > 0
+          ? { type: "custom", customUnitId: ingCustomUnits[0].id }
+          : { type: "core", unit: "unit" };
 
       const newSnack = {
         instanceId: crypto.randomUUID(),
@@ -61,9 +60,7 @@ export const MealSlot: React.FC<MealSlotProps> = ({ date, mealType }) => {
 
       dispatch({ type: "ADD_PLANNED_SNACK", payload: newSnack });
       if (user) saveSnackToCloud(user.uid, newSnack).catch(console.error);
-
     } else if (data) {
-      // ── Meal drop ──
       const newPlannedMeal = {
         instanceId: crypto.randomUUID(),
         mealId: data,
@@ -76,6 +73,8 @@ export const MealSlot: React.FC<MealSlotProps> = ({ date, mealType }) => {
     }
   };
 
+  const isEmpty = mealsInSlot.length === 0 && snacksInSlot.length === 0;
+
   return (
     <div
       className={`${styles.cell} ${isHovering ? styles.cellHovering : ""}`}
@@ -83,17 +82,26 @@ export const MealSlot: React.FC<MealSlotProps> = ({ date, mealType }) => {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className={styles.slotContent}>
-        {mealsInSlot.map((plannedMeal) => (
-          <PlannedMealCard key={plannedMeal.instanceId} plannedMeal={plannedMeal} />
-        ))}
-        {snacksInSlot.map((plannedSnack) => (
-          <PlannedSnackCard key={plannedSnack.instanceId} plannedSnack={plannedSnack} />
-        ))}
-        {mealsInSlot.length === 0 && snacksInSlot.length === 0 && (
-          <div className={styles.emptySlot}></div>
-        )}
-      </div>
+      {isEmpty ? (
+        <div className={styles.emptySlot} />
+      ) : (
+        <div className={styles.slotContent}>
+          {mealsInSlot.map((plannedMeal) => (
+            <PlannedItemCard
+              key={plannedMeal.instanceId}
+              kind="meal"
+              plannedMeal={plannedMeal}
+            />
+          ))}
+          {snacksInSlot.map((plannedSnack) => (
+            <PlannedItemCard
+              key={plannedSnack.instanceId}
+              kind="snack"
+              plannedSnack={plannedSnack}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

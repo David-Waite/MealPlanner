@@ -1,50 +1,75 @@
 import React from "react";
 import { useAppState, useAppDispatch } from "../../context/hooks";
+import type { PlannedMeal, PlannedSnack } from "../../types";
 import { MealSlot } from "./MealSlot";
 import styles from "./MealPlannerGrid.module.css";
-
 
 // Helper to format date to 'YYYY-MM-DD'
 const toISODateString = (date: Date): string => {
   return date.toISOString().split("T")[0];
 };
 
+// --- Row height calculation ---
+// Card height: 72px, stack overlap: 28px → each extra card adds 44px of row height.
+// Base height accommodates up to 3 stacked cards + padding.
+const BASE_ROW_HEIGHT = 175;
+const EXTRA_PER_CARD = 44; // (72px card - 28px overlap)
+
+function getMaxSlotCount(
+  dateStr: string,
+  mealColumns: string[],
+  plan: PlannedMeal[],
+  snacks: PlannedSnack[]
+): number {
+  let max = 0;
+  for (const col of mealColumns) {
+    const count =
+      plan.filter((p) => p.date === dateStr && p.mealType === col).length +
+      snacks.filter((s) => s.date === dateStr && s.mealType === col).length;
+    if (count > max) max = count;
+  }
+  return max;
+}
+
+function getRowHeight(
+  dateStr: string,
+  mealColumns: string[],
+  plan: PlannedMeal[],
+  snacks: PlannedSnack[]
+): number {
+  const max = getMaxSlotCount(dateStr, mealColumns, plan, snacks);
+  if (max <= 3) return BASE_ROW_HEIGHT;
+  return BASE_ROW_HEIGHT + (max - 3) * EXTRA_PER_CARD;
+}
+
 export const MealPlannerGrid: React.FC = () => {
-  const { mealColumns, selectedDates } = useAppState();
+  const { mealColumns, selectedDates, plan, snacks } = useAppState();
   const dispatch = useAppDispatch();
 
   // --- VIRTUALIZATION CONSTANTS ---
-  const ROW_HEIGHT = 120; // px
-  const OVERSCAN = 2; // Extra rows to render above/below
-  // Total span: let's do ~30 years (10k days)
-  // Center it so we can scroll up ~15 years and down ~15 years
+  // BASE_ROW_HEIGHT is used for scroll math; actual rendered heights may be larger.
+  const OVERSCAN = 2;
   const TOTAL_DAYS = 10000;
   const START_OFFSET_INDEX = 5000; // Index representing "Today"
 
-  // Ref for the scrolling container
   const containerRef = React.useRef<HTMLDivElement>(null);
-
-  // State for virtualization
   const [scrollTop, setScrollTop] = React.useState(0);
-  const [viewportHeight, setViewportHeight] = React.useState(600); // Default estimate
+  const [viewportHeight, setViewportHeight] = React.useState(600);
 
-  // On mount, scroll to center
+  // On mount, scroll to today
   React.useLayoutEffect(() => {
     if (containerRef.current) {
-      // Calculate where "today" is
-      const initialScroll = START_OFFSET_INDEX * ROW_HEIGHT;
+      const initialScroll = START_OFFSET_INDEX * BASE_ROW_HEIGHT;
       containerRef.current.scrollTop = initialScroll;
       setScrollTop(initialScroll);
       setViewportHeight(containerRef.current.clientHeight);
     }
   }, []);
 
-  // Update scroll top on scroll
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setScrollTop(e.currentTarget.scrollTop);
   };
 
-  // Update viewport height on resize
   React.useEffect(() => {
     const handleResize = () => {
       if (containerRef.current) {
@@ -55,26 +80,32 @@ export const MealPlannerGrid: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // --- CALCULATE VISIBLE RANGE ---
-  const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+  // --- VISIBLE RANGE (based on BASE_ROW_HEIGHT for simplicity) ---
+  const startIndex = Math.max(0, Math.floor(scrollTop / BASE_ROW_HEIGHT) - OVERSCAN);
   const endIndex = Math.min(
     TOTAL_DAYS - 1,
-    Math.floor((scrollTop + viewportHeight) / ROW_HEIGHT) + OVERSCAN
+    Math.floor((scrollTop + viewportHeight) / BASE_ROW_HEIGHT) + OVERSCAN
   );
 
-  // Generate the visible items
-  const visibleItems = [];
+  // Build visible items with cumulative top positions using actual row heights
+  const visibleItems: {
+    index: number;
+    date: Date;
+    dateString: string;
+    top: number;
+    height: number;
+  }[] = [];
+
+  let currentTop = startIndex * BASE_ROW_HEIGHT;
   for (let i = startIndex; i <= endIndex; i++) {
     const date = new Date();
-    // Calculate date relative to today based on index offset
-    // index 5000 = 0 days diff
     const dayOffset = i - START_OFFSET_INDEX;
     date.setDate(date.getDate() + dayOffset);
-    visibleItems.push({
-      index: i,
-      date: date,
-      dateString: toISODateString(date),
-    });
+    const dateString = toISODateString(date);
+    const rowHeight = getRowHeight(dateString, mealColumns, plan, snacks);
+
+    visibleItems.push({ index: i, date, dateString, top: currentTop, height: rowHeight });
+    currentTop += rowHeight;
   }
 
   const gridStyle = {
@@ -94,7 +125,6 @@ export const MealPlannerGrid: React.FC = () => {
     const end = d1 < d2 ? d2 : d1;
     const range: string[] = [];
     const current = new Date(start);
-    // Safety limit to prevent infinite loops (max 1 year range)
     let safety = 0;
     while (current <= end && safety < 366) {
       range.push(toISODateString(current));
@@ -105,31 +135,23 @@ export const MealPlannerGrid: React.FC = () => {
   };
 
   const handleDayMouseDown = (dateString: string, e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Left click only
-
+    if (e.button !== 0) return;
     if (e.shiftKey) {
       handleDayClick(dateString, e);
       return;
     }
-
     const isSelected = selectedDates.includes(dateString);
-    const mode = isSelected ? "deselect" : "select";
-    
     setInitialSelectedDuringDrag(selectedDates);
     setIsDragging(true);
     setDragStartDay(dateString);
-    setDragMode(mode);
-
-    // Initial toggle for the clicked day
+    setDragMode(isSelected ? "deselect" : "select");
     handleDayClick(dateString, e);
   };
 
   const handleDayMouseEnter = (dateString: string) => {
     if (!isDragging || !dragStartDay) return;
-
     const range = getRange(dragStartDay, dateString);
     let newSelected: string[];
-
     if (dragMode === "select") {
       newSelected = Array.from(new Set([...initialSelectedDuringDrag, ...range]));
     } else {
@@ -148,43 +170,28 @@ export const MealPlannerGrid: React.FC = () => {
     return () => window.removeEventListener("mouseup", handleMouseUp);
   }, []);
 
-  // --- Date Selection Handler (Unchanged Logic, updated var names) ---
-  const handleDayClick = (clickedDayString: string, e: React.MouseEvent | React.KeyboardEvent) => {
-    // Note: Range selection logic relies on 'displayedDayStrings'.
-    // Since we are virtualized, we can't easily count on visual order of *all* items for a huge range.
-    // But for a reasonable range select, we can infer indices or just use dates.
-    // For simplicity, I'll stick to the existing logic but adapt it to just handle the toggle/add
-    // properly. Shift-click across a HUGE virtual range might be tricky,
-    // let's simplify for now: Range select works if we just parse dates.
-
+  const handleDayClick = (
+    clickedDayString: string,
+    e: React.MouseEvent | React.KeyboardEvent
+  ) => {
     const isSelected = selectedDates.includes(clickedDayString);
-
     if (!e.shiftKey) {
-      // Standard Toggle
-      let newSelectedDates: string[];
-      if (isSelected) {
-        newSelectedDates = selectedDates.filter((d) => d !== clickedDayString);
-      } else {
-        newSelectedDates = [...selectedDates, clickedDayString];
-      }
+      const newSelectedDates = isSelected
+        ? selectedDates.filter((d) => d !== clickedDayString)
+        : [...selectedDates, clickedDayString];
       dispatch({ type: "SET_SELECTED_DATES", payload: newSelectedDates });
     } else {
-      // Simplified Shift-Click:
-      // 1. Find the latest selected date (if any) as anchor
       if (selectedDates.length === 0) return;
-
-      const lastSelected = selectedDates[selectedDates.length - 1]; // Naive anchor
+      const lastSelected = selectedDates[selectedDates.length - 1];
       const range = getRange(lastSelected, clickedDayString);
-
-       // Merge
-       const newSelectedDatesSet = new Set([...selectedDates, ...range]);
-       dispatch({ type: "SET_SELECTED_DATES", payload: Array.from(newSelectedDatesSet) });
+      const newSelectedDatesSet = new Set([...selectedDates, ...range]);
+      dispatch({ type: "SET_SELECTED_DATES", payload: Array.from(newSelectedDatesSet) });
     }
   };
 
   return (
     <div className={styles.gridContainer}>
-      {/* --- STICKY HEADER --- */}
+      {/* Sticky column header */}
       <div className={styles.gridHeader} style={gridStyle}>
         <div className={styles.headerCell}>Day</div>
         {mealColumns.map((colName) => (
@@ -194,34 +201,25 @@ export const MealPlannerGrid: React.FC = () => {
         ))}
       </div>
 
-      {/* --- SCROLLABLE BODY --- */}
-      <div
-        className={styles.gridBody}
-        ref={containerRef}
-        onScroll={handleScroll}
-      >
-        {/* Phantom Container */}
+      {/* Scrollable body */}
+      <div className={styles.gridBody} ref={containerRef} onScroll={handleScroll}>
+        {/* Phantom gives the scrollbar its total size */}
         <div
           className={styles.virtualPhantom}
-          style={{ height: `${TOTAL_DAYS * ROW_HEIGHT}px` }}
+          style={{ height: `${TOTAL_DAYS * BASE_ROW_HEIGHT}px` }}
         >
-          {visibleItems.map(({ index, date, dateString }) => {
+          {visibleItems.map(({ date, dateString, top, height }) => {
             const isSelected = selectedDates.includes(dateString);
 
-            // Absolute positioning for the row
             const rowStyle: React.CSSProperties = {
-                ...gridStyle,
-                top: `${index * ROW_HEIGHT}px`,
-                height: `${ROW_HEIGHT}px`,
+              ...gridStyle,
+              top: `${top}px`,
+              height: `${height}px`,
             };
 
             return (
-              <div
-                key={dateString}
-                className={styles.virtualRow}
-                style={rowStyle}
-              >
-                {/* Day Header Cell (Y-Axis) */}
+              <div key={dateString} className={styles.virtualRow} style={rowStyle}>
+                {/* Day label cell */}
                 <div
                   className={`${styles.dayCell} ${styles.cell} ${
                     isSelected ? styles.dayCellSelected : ""
@@ -242,14 +240,11 @@ export const MealPlannerGrid: React.FC = () => {
                     {date.toLocaleDateString("en-US", { weekday: "long" })}
                   </div>
                   <div className={styles.dayCellDate}>
-                    {date.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
+                    {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </div>
                 </div>
 
-                {/* Meal Slots */}
+                {/* Meal slots */}
                 {mealColumns.map((mealType) => (
                   <MealSlot
                     key={`${dateString}-${mealType}`}

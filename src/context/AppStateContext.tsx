@@ -54,6 +54,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
               snacks: merged.snacks,
               ingredients: merged.ingredients,
               ...(merged.users ? { users: merged.users } : {}),
+              ...(merged.favourites ? { favourites: merged.favourites } : {}),
             },
           });
         } catch (err) {

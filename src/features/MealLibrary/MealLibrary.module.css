@@ -1,220 +1,4 @@
-.cardList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 8px 16px 40px 24px;
-}
-.mealCard {
-  position: relative;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.04),
-    0 4px 12px rgba(0, 0, 0, 0.08); /* Soft shadow stack */
-  cursor: grab;
-  transition: all 200ms cubic-bezier(0.25, 0.8, 0.25, 1);
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; 
-}
-
-
-.mealCard:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 
-    0 8px 16px rgba(0, 0, 0, 0.06),
-    0 12px 32px rgba(0, 0, 0, 0.12); /* Deep lift */
-  z-index: 10;
-}
-
-.mealCard:active {
-  cursor: grabbing;
-}
-
-/* --- Content --- */
-.cardImage {
-  width: 100%;
-  aspect-ratio: 268 / 140; /* Maintain original ratio (from 300px sidebar width) */
-  object-fit: cover;
-  flex-shrink: 0;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-.cardContent {
-  padding: 8px 8px;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.cardTitle {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1a202c;
-  margin: 0 0 2px 0;
-  line-height: 1.3;
-}
-
-/* --- Servings Badge (Overlay) --- */
-.servingsTracker {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 5;
-  
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  
-  padding: 4px 8px;
-  border-radius: 99px;
-  background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(4px);
-  
-  color: #4a5568;
-  font-size: 0.75rem;
-  font-weight: 700;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: all 200ms ease;
-}
-
-.servingsComplete {
-  background-color: #c6f6d5; /* Green tint */
-  color: #276749; /* Green text */
-}
-
-/* --- Actions Overlay --- */
-.cardActions {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  gap: 6px;
-  opacity: 0;
-  transform: translateY(-5px);
-  transition: all 200ms ease;
-  z-index: 5;
-}
-
-.mealCard:hover .cardActions {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.actionButton {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.95);
-  color: #4a5568;
-  border: 1px solid rgba(0,0,0,0.1);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 150ms ease;
-  padding: 0; /* Reset */
-}
-
-.actionButton:hover {
-  transform: scale(1.1);
-  background-color: #ffffff;
-  color: #2d3748;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.deleteButton:hover {
-  background-color: #fff5f5;
-  color: #e53e3e;
-  border-color: #feb2b2;
-}
-
-/* ── Mode Toggle (Meals / Snacks) ── */
-.modeToggle {
-  display: flex;
-  background: rgba(0,0,0,0.05);
-  border-radius: 14px;
-  padding: 4px;
-  gap: 2px;
-}
-
-.modeBtn {
-  flex: 1;
-  padding: 8px 0;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--color-text-secondary);
-  background: none;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 180ms ease;
-  letter-spacing: -0.01em;
-}
-
-.modeBtn:hover {
-  color: var(--color-text-primary);
-}
-
-.modeBtnActive {
-  background: #ffffff;
-  color: #1a202c;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-}
-
-/* ── New Snack button ── */
-.newSnackBtn {
-  font-size: 0.82rem;
-  font-weight: 700;
-  padding: 7px 14px;
-  border-radius: 10px;
-  border: none;
-  background: rgba(159,122,234,0.12);
-  color: #6b46c1;
-  cursor: pointer;
-  transition: background 150ms, transform 100ms;
-  white-space: nowrap;
-}
-.newSnackBtn:hover {
-  background: rgba(159,122,234,0.22);
-  transform: translateY(-1px);
-}
-
-/* ── Snack hint text ── */
-.snackHint {
-  font-size: 0.75rem;
-  color: #a0aec0;
-  margin: 0;
-  line-height: 1.4;
-}
-
-/* ── Snack grid (2-column) ── */
-.snackGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 12px 16px 40px;
-}
-
-.snackEmpty {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--color-text-secondary);
-  font-style: italic;
-  font-size: 0.88rem;
-}
-
-/* --- Sidebar Layout --- */
+/* ── Sidebar shell ─────────────────────────────────────────── */
 .sidebarWrapper {
   display: flex;
   flex-direction: column;
@@ -226,45 +10,13 @@
 .sidebarHeader {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   background-color: var(--color-bg-sidebar);
   z-index: 20;
-  padding: 24px 24px 16px 24px;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.04);
+  padding: 20px 20px 14px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   flex-shrink: 0;
 }
-
-.scrollableArea {
-  flex-grow: 1;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-}
-
-/* Custom Scrollbar */
-.scrollableArea::-webkit-scrollbar {
-  width: 8px;
-}
-
-.scrollableArea::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollableArea::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border-radius: 20px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  transition: background-color 0.3s;
-}
-
-.scrollableArea:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.15);
-}
-
-.scrollableArea::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.25);
-}
-
 
 .headerTop {
   display: flex;
@@ -274,207 +26,293 @@
 
 .sidebarTitle {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: var(--color-text-primary);
   letter-spacing: -0.02em;
 }
 
-.newMealBtn {
-  font-weight: 600;
-  padding: 8px 16px;
-}
-
-.searchContainer {
-  position: relative;
-  width: 100%;
-}
-
-.searchInput {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background-color: #ffffff; /* Make fully opaque so cards don't show through */
-  font-size: 0.95rem;
-  transition: all 200ms ease;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-}
-
-.searchInput:focus {
-  outline: none;
-  background-color: #ffffff;
-  border-color: #4c51bf; /* Indigo shift */
-  box-shadow: 
-    0 0 0 3px rgba(76, 81, 191, 0.1),
-    0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.searchInput::placeholder {
-  color: #a0aec0;
-}
-
-.noResults {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
-
-/* --- Tag Filters --- */
-.tagFilters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-  max-height: 62px; /* Shows approx two rows */
+.scrollableArea {
+  flex-grow: 1;
   overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  padding-bottom: 4px;
   scrollbar-gutter: stable;
+  padding-bottom: 40px;
 }
 
-/* Custom Scrollbar for Tags (Hidden like in meals list) */
-.tagFilters::-webkit-scrollbar {
-  width: 6px;
-}
-
-.tagFilters::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.tagFilters::-webkit-scrollbar-thumb {
+.scrollableArea::-webkit-scrollbar { width: 8px; }
+.scrollableArea::-webkit-scrollbar-track { background: transparent; }
+.scrollableArea::-webkit-scrollbar-thumb {
   background-color: transparent;
   border-radius: 20px;
   border: 2px solid transparent;
   background-clip: padding-box;
   transition: background-color 0.3s;
 }
+.scrollableArea:hover::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.13); }
+.scrollableArea::-webkit-scrollbar-thumb:hover { background-color: rgba(0,0,0,0.22); }
 
-.tagFilters:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.12);
+/* ── Header sub-filters (Tags / Discover) ─────────────────── */
+.headerFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.tagFilter {
+/* ── Unified search bar ────────────────────────────────────── */
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 11px;
+  font-size: 1.1rem;
+  color: #a0aec0;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 34px 10px 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.09);
+  background: #ffffff;
+  font-size: 0.9rem;
+  color: #2d3748;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #4c51bf;
+  box-shadow: 0 0 0 3px rgba(76,81,191,0.1);
+}
+
+.searchInput::placeholder { color: #a0aec0; }
+
+.searchClear {
+  position: absolute;
+  right: 9px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: #e2e8f0;
+  color: #718096;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease;
+  padding: 0;
+}
+.searchClear:hover { background: #cbd5e0; }
+
+/* ── Sections ──────────────────────────────────────────────── */
+.section {
+  padding: 16px 20px 4px 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sectionTitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sectionActions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── Sub-section header row (label + action button) ───────── */
+.subSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 6px;
+}
+
+/* ── Favourites sub-label ──────────────────────────────────── */
+.favouriteSubLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+/* ── Friends filter ────────────────────────────────────────── */
+.friendsFilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.friendChip {
   padding: 4px 10px;
   border-radius: 99px;
   font-size: 0.75rem;
   font-weight: 600;
-  background-color: #f7fafc;
+  background: #f7fafc;
   color: #718096;
-  border: 1px solid #edf2f7;
+  border: 1px solid #e2e8f0;
   cursor: pointer;
-  transition: all 150ms ease;
-  scroll-snap-align: start;
+  transition: all 140ms ease;
 }
 
-.tagFilter:hover {
-  background-color: #edf2f7;
-  color: #4a5568;
+.friendChip:hover { background: #edf2f7; color: #4a5568; }
+
+.friendChipActive {
+  background: #ebf4ff;
+  color: #3182ce;
+  border-color: #bee3f8;
 }
 
-.tagFilterActive {
-  background-color: #4c51bf;
-  color: #ffffff;
+/* ── Filter toggles (Tags / Discover) ─────────────────────── */
+.filterToggle {
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #f7fafc;
+  color: #718096;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.filterToggle:hover { background: #edf2f7; color: #4a5568; }
+
+.filterToggleActive {
+  background: #4c51bf;
+  color: #fff;
   border-color: #4c51bf;
 }
 
-.tagFilterActive:hover {
-  background-color: #434190;
-  color: #ffffff;
+/* ── Tag filters ───────────────────────────────────────────── */
+.tagFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+  max-height: 62px;
+  overflow-y: auto;
+  padding-bottom: 2px;
+}
+
+.tagFilter {
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #f7fafc;
+  color: #718096;
+  border: 1px solid #edf2f7;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.tagFilter:hover { background: #edf2f7; color: #4a5568; }
+
+.tagFilterActive {
+  background: #4c51bf;
+  color: #fff;
+  border-color: #4c51bf;
 }
 
 .clearTagsBtn {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   background: none;
   border: none;
   color: #a0aec0;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 3px 6px;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+.clearTagsBtn:hover { color: #718096; }
 
-.clearTagsBtn:hover {
-  color: #718096;
+/* ── Meal card list ────────────────────────────────────────── */
+.cardList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  padding-bottom: 12px;
 }
 
-/* --- Tab switcher --- */
-
-.tabRow {
-  display: flex;
-  gap: var(--spacing-1);
-  background-color: rgba(0, 0, 0, 0.04);
-  border-radius: 10px;
-  padding: 3px;
-}
-
-.tabBtn {
-  flex: 1;
-  padding: 5px 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  background: none;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease;
-}
-
-.tabBtn:hover {
-  color: var(--color-text-primary);
-}
-
-.tabBtnActive {
-  background-color: #ffffff;
-  color: #4c51bf;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* --- Friend meal card (read-only) --- */
-
-.friendMealCard {
-  background-color: #ffffff;
+/* ── Meal card ─────────────────────────────────────────────── */
+.mealCard {
+  position: relative;
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.04),
-    0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.08);
+  cursor: grab;
+  transition: all 200ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  user-select: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.friendMealImage {
+.mealCard:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.06), 0 12px 32px rgba(0,0,0,0.12);
+  z-index: 10;
+}
+
+.mealCard:active { cursor: grabbing; }
+
+.cardImage {
   width: 100%;
   aspect-ratio: 268 / 140;
   object-fit: cover;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-.friendMealContent {
-  padding: 8px 8px;
+.cardContent {
+  padding: 8px;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: center;
 }
 
-.friendMealName {
-  font-size: 0.95rem;
+.cardTitle {
+  font-size: 0.92rem;
   font-weight: 700;
   color: #1a202c;
+  margin: 0 0 2px 0;
   line-height: 1.3;
 }
 
-.friendMealAttribution {
-  font-size: 0.75rem;
+.cardAttribution {
+  font-size: 0.7rem;
   color: #718096;
   font-style: italic;
+  margin-top: 1px;
+  display: block;
 }
 
-/* --- Card Tags --- */
 .cardTags {
   display: flex;
   flex-wrap: wrap;
@@ -483,110 +321,537 @@
 }
 
 .cardTag {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 600;
   color: #a0aec0;
-  background-color: #f8fafc;
-  padding: 1px 6px;
+  background: #f8fafc;
+  padding: 1px 5px;
   border-radius: 4px;
   border: 1px solid #edf2f7;
 }
 
-.cardAttribution {
+/* ── Card actions overlay (edit / del / star) ──────────────── */
+.cardActions {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: flex;
+  gap: 5px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 180ms ease;
+  z-index: 5;
+}
+
+.mealCard:hover .cardActions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.actionButton {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.95);
+  color: #4a5568;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 140ms ease;
+  padding: 0;
+}
+
+.actionButton:hover {
+  transform: scale(1.12);
+  background: #ffffff;
+  color: #2d3748;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.14);
+}
+
+.deleteButton:hover {
+  background: #fff5f5;
+  color: #e53e3e;
+  border-color: #feb2b2;
+}
+
+.starBtnActive {
+  color: #d97706;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.starBtnActive:hover {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* ── Servings tracker badge ────────────────────────────────── */
+.servingsTracker {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(4px);
+  color: #4a5568;
   font-size: 0.72rem;
-  color: #718096;
-  font-style: italic;
-  margin-top: 1px;
-  display: block;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 200ms ease;
+}
+
+.servingsComplete {
+  background: #c6f6d5;
+  color: #276749;
 }
 
 .pendingBadge {
   display: inline-block;
   margin-top: 4px;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 99px;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 700;
   background: #fef3c7;
   color: #92400e;
   border: 1px solid #fde68a;
 }
 
-/* --- Discover card --- */
+/* ── New meal button ───────────────────────────────────────── */
+.newMealBtn {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 13px;
+  border-radius: 9px;
+  border: none;
+  background: rgba(76,81,191,0.1);
+  color: #4c51bf;
+  cursor: pointer;
+  transition: background 140ms ease;
+  white-space: nowrap;
+}
+.newMealBtn:hover { background: rgba(76,81,191,0.18); }
 
-.discoverCard {
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.04),
-    0 4px 12px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: box-shadow 200ms ease, transform 200ms ease;
+/* ── New snack button (section header) ─────────────────────── */
+.newSnackBtn {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 7px;
+  border: none;
+  background: rgba(72,187,120,0.1);
+  color: #276749;
+  cursor: pointer;
+  transition: background 140ms ease;
+  white-space: nowrap;
+}
+.newSnackBtn:hover { background: rgba(72,187,120,0.2); }
+
+/* ── Snack pool search ─────────────────────────────────────── */
+.snackSearchContainer {
+  margin-bottom: 10px;
 }
 
-.discoverCard:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 6px 14px rgba(0, 0, 0, 0.07),
-    0 10px 28px rgba(0, 0, 0, 0.1);
+.snackSearchInput {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(0,0,0,0.09);
+  background: #f7fafc;
+  font-size: 0.85rem;
+  color: #2d3748;
+  transition: border-color 160ms ease;
+  box-sizing: border-box;
+}
+
+.snackSearchInput:focus {
+  outline: none;
+  border-color: #48bb78;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(72,187,120,0.15);
+}
+
+.snackSearchInput::placeholder { color: #a0aec0; }
+
+/* ── Snack pool list ───────────────────────────────────────── */
+.snackList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+}
+
+.snackPoolItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  cursor: grab;
+  transition: background 120ms ease;
+  user-select: none;
+}
+
+.snackPoolItem:hover { background: #f7fafc; }
+.snackPoolItem:active { cursor: grabbing; }
+
+.snackPoolThumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.snackPoolThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.snackPoolInitial {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.snackPoolName {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2d3748;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.snackStarBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: #cbd5e0;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+  transition: color 120ms ease, transform 120ms ease;
+}
+
+.snackStarBtn:hover { color: #d97706; transform: scale(1.2); }
+
+.snackStarBtnActive { color: #d97706; }
+.snackStarBtnActive:hover { color: #b45309; }
+
+/* ── No results / empty ────────────────────────────────────── */
+.emptyMsg {
+  font-size: 0.83rem;
+  color: #a0aec0;
+  font-style: italic;
+  text-align: center;
+  margin: 8px 0 12px;
+}
+
+.snackNoResults {
+  text-align: center;
+  padding: 4px 0 8px;
+}
+
+.newSnackInlineBtn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1.5px dashed #68d391;
+  background: transparent;
+  color: #276749;
+  cursor: pointer;
+  transition: background 140ms ease;
+  margin-top: 4px;
+}
+.newSnackInlineBtn:hover { background: rgba(72,187,120,0.07); }
+
+/* ── Search results ────────────────────────────────────────── */
+.searchResults {
+  padding: 12px 20px 8px;
+}
+
+.resultSection {
+  margin-bottom: 16px;
+}
+
+.resultSectionLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 8px;
+}
+
+/* ── Discover panel ────────────────────────────────────────── */
+.discoverPanel {
+  margin-top: 10px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.discoverLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 4px;
+}
+
+.discoverCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
 }
 
 .discoverCardImage {
-  width: 100%;
-  aspect-ratio: 268 / 140;
+  width: 44px;
+  height: 44px;
   object-fit: cover;
+  border-radius: 7px;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .discoverCardContent {
-  padding: 8px 8px;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  flex: 1;
+  gap: 1px;
 }
 
 .discoverCardName {
-  font-size: 0.95rem;
+  font-size: 0.83rem;
   font-weight: 700;
   color: #1a202c;
-  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .discoverCardAttribution {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: #718096;
   font-style: italic;
 }
 
-.discoverCardFooter {
-  padding: 6px 8px 8px;
-  display: flex;
-  justify-content: flex-end;
-}
-
 .bookmarkBtn {
-  font-size: 0.78rem;
+  flex-shrink: 0;
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 8px;
-  background: rgba(76, 81, 191, 0.07);
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: rgba(76,81,191,0.07);
   color: #4c51bf;
-  border: 1px solid rgba(76, 81, 191, 0.2);
+  border: 1px solid rgba(76,81,191,0.2);
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease;
+  transition: background 140ms ease;
+  white-space: nowrap;
 }
 
-.bookmarkBtn:hover {
-  background: rgba(76, 81, 191, 0.14);
-  border-color: rgba(76, 81, 191, 0.4);
+.bookmarkBtn:hover { background: rgba(76,81,191,0.14); }
+.bookmarkBtn:disabled { opacity: 0.45; cursor: default; }
+
+/* ── View switcher dropdown ────────────────────────────────── */
+.viewDropdown {
+  position: relative;
 }
 
-.bookmarkBtn:disabled {
-  opacity: 0.5;
-  cursor: default;
+.viewDropdownTrigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  transition: color 140ms ease;
 }
 
+.viewDropdownTrigger:hover { color: #4c51bf; }
+
+.viewDropdownChevron {
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: #a0aec0;
+  transition: transform 180ms ease, color 140ms ease;
+  display: inline-block;
+  transform: rotate(90deg);
+  line-height: 1;
+}
+
+.viewDropdownChevronOpen {
+  transform: rotate(270deg);
+  color: #4c51bf;
+}
+
+.viewDropdownPanel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.09);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+  z-index: 100;
+  min-width: 140px;
+  padding: 4px;
+}
+
+.viewDropdownOption {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.viewDropdownOption:hover {
+  background: #f7fafc;
+  color: #1a202c;
+}
+
+.viewDropdownOptionActive {
+  background: rgba(76,81,191,0.08);
+  color: #4c51bf;
+}
+
+/* ── Discover view ─────────────────────────────────────────── */
+.discoverView {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.discoverViewHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  flex-shrink: 0;
+}
+
+.discoverViewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  padding: 16px 20px 40px;
+}
+
+.discoverGridCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.discoverSaveBtn {
+  margin-top: 5px;
+  width: 100%;
+  padding: 5px 0;
+  border-radius: 7px;
+  border: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(76,81,191,0.08);
+  color: #4c51bf;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.discoverSaveBtn:hover:not(:disabled) { background: rgba(76,81,191,0.16); }
+.discoverSaveBtn:disabled { cursor: default; }
+
+.discoverSaveBtnSaved {
+  background: rgba(72,187,120,0.1);
+  color: #276749;
+}
+
+/* ── Friends view groups ───────────────────────────────────── */
+.friendsGroup {
+  padding: 12px 20px 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.friendsGroupLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
+}
+
+.friendsGroupGrid {
+  padding: 0 0 12px;
+}
+
+/* ── Blank placeholder views ───────────────────────────────── */
+.blankView {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 8px;
+}
+
+.blankViewIcon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.blankViewTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4a5568;
+  margin: 0;
+}
+
+.blankViewSubtitle {
+  font-size: 0.82rem;
+  color: #a0aec0;
+  margin: 0;
+}

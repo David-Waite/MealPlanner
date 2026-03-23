@@ -71,6 +71,12 @@ export const appReducer = (state: AppState, action: Action): AppState => {
     case "ADD_USER":
       return { ...state, users: [...state.users, action.payload] };
 
+    case "UPDATE_USER":
+      return {
+        ...state,
+        users: state.users.map((u) => u.id === action.payload.id ? action.payload : u),
+      };
+
     case "DELETE_USER":
       return {
         ...state,
@@ -132,6 +138,17 @@ export const appReducer = (state: AppState, action: Action): AppState => {
       };
 
     // --- Shopping List Settings ---
+    case "TOGGLE_FAVOURITE": {
+      const { id, type } = action.payload;
+      const exists = state.favourites.some((f) => f.id === id && f.type === type);
+      return {
+        ...state,
+        favourites: exists
+          ? state.favourites.filter((f) => !(f.id === id && f.type === type))
+          : [...state.favourites, action.payload],
+      };
+    }
+
     case "SET_SHOPPING_LIST_SETTINGS":
       return {
         ...state,
@@ -150,6 +167,7 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         ...(action.payload.snacks !== undefined ? { snacks: action.payload.snacks } : {}),
         ...(action.payload.users ? { users: action.payload.users } : {}),
         ...(action.payload.ingredients ? { ingredients: action.payload.ingredients } : {}),
+        ...(action.payload.favourites !== undefined ? { favourites: action.payload.favourites } : {}),
       };
 
     default:

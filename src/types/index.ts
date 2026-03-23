@@ -123,6 +123,13 @@ export interface PlannedSnack {
   assignedUsers: string[];
 }
 
+// --- Favourites ---
+
+export interface FavouriteItem {
+  id: string;
+  type: "meal" | "snack";
+}
+
 // --- Shopping List Settings ---
 
 export interface ShoppingListSettings {
@@ -147,4 +154,5 @@ export interface AppState {
 
   mealColumns: string[];
   shoppingListSettings: ShoppingListSettings;
+  favourites: FavouriteItem[];
 }

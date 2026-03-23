@@ -515,4 +515,6 @@ export const initialState: AppState = {
     unitSystem: "metric",
     showCustomLabels: true,
   },
+
+  favourites: [],
 };

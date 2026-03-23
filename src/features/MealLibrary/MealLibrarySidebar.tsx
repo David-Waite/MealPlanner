@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { Meal, Ingredient } from "../../types";
 import { useAppState, useAppDispatch } from "../../context/hooks";
 import { useAuth } from "../../context/AuthContext";
 import { MealCard } from "./MealCard";
-import { SnackCard } from "./SnackCard";
 import { SnackFormModal } from "./SnackFormModal";
-import { Button } from "../../components/Button/Button";
 import { MealFormModal } from "./MealFormModal";
 import {
   loadFriendsRecipes,
@@ -15,29 +13,65 @@ import {
   deleteRecipeFromCloud,
   loadGlobalSnacks,
   bookmarkSnack,
+  saveFavourites,
 } from "../../lib/cloudSync";
 import type { FirestoreRecipe, GlobalIngredient } from "../../lib/firestoreTypes";
 import styles from "./MealLibrary.module.css";
 
-type SidebarMode = "meals" | "snacks";
-type MealsTab = "yours" | "discover";
-type SnacksTab = "global" | "mine";
 type DiscoverMeal = FirestoreRecipe & { ownerDisplayName: string };
 
+const CATEGORY_GRADIENTS: Record<string, string> = {
+  "Produce":              "linear-gradient(135deg, #68d391 0%, #38a169 100%)",
+  "Meat":                 "linear-gradient(135deg, #fc8181 0%, #c53030 100%)",
+  "Dairy":                "linear-gradient(135deg, #63b3ed 0%, #2b6cb0 100%)",
+  "Pantry":               "linear-gradient(135deg, #f6ad55 0%, #c05621 100%)",
+  "Snacks":               "linear-gradient(135deg, #b794f4 0%, #6b46c1 100%)",
+  "Household & Cleaning": "linear-gradient(135deg, #a0aec0 0%, #4a5568 100%)",
+  "Frozen":               "linear-gradient(135deg, #76e4f7 0%, #2c7a7b 100%)",
+  "Other":                "linear-gradient(135deg, #cbd5e0 0%, #718096 100%)",
+};
+
 export const MealLibrarySidebar: React.FC = () => {
-  const { meals, ingredients } = useAppState();
+  const { meals, ingredients, favourites } = useAppState();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
 
-  // ── Top-level mode ──
-  const [mode, setMode] = useState<SidebarMode>("meals");
+  // ── View switcher ──
+  type SidebarView = "library" | "discover" | "friends";
+  const [sidebarView, setSidebarView] = useState<SidebarView>("library");
+  const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
+  const viewDropdownRef = useRef<HTMLDivElement>(null);
 
-  // ── Meals mode state ──
+  useEffect(() => {
+    if (!viewDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (viewDropdownRef.current && !viewDropdownRef.current.contains(e.target as Node))
+        setViewDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [viewDropdownOpen]);
+
+  const VIEW_LABELS: Record<SidebarView, string> = {
+    library: "Library",
+    discover: "Discover",
+    friends: "Friends",
+  };
+
+  // ── Modals ──
   const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
-  const [mealsTab, setMealsTab] = useState<MealsTab>("yours");
-  const [mealSearch, setMealSearch] = useState("");
+  const [isSnackModalOpen, setIsSnackModalOpen] = useState(false);
+  const [editingSnack, setEditingSnack] = useState<Ingredient | null>(null);
+
+  // ── Unified search ──
+  const [search, setSearch] = useState("");
+  const trimmedSearch = search.trim().toLowerCase();
+  const isSearching = trimmedSearch.length > 0;
+
+  // ── Meals section ──
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showTagFilter, setShowTagFilter] = useState(false);
   const [friendMeals, setFriendMeals] = useState<Array<Meal & { ownerDisplayName: string }>>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [friendsLoaded, setFriendsLoaded] = useState(false);
@@ -46,36 +80,43 @@ export const MealLibrarySidebar: React.FC = () => {
   const [discoverLoaded, setDiscoverLoaded] = useState(false);
   const [bookmarking, setBookmarking] = useState<string | null>(null);
 
-  // ── Snacks mode state ──
-  const [snacksTab, setSnacksTab] = useState<SnacksTab>("global");
-  const [isSnackModalOpen, setIsSnackModalOpen] = useState(false);
-  const [editingSnack, setEditingSnack] = useState<Ingredient | null>(null);
+  // ── Favourites filter ──
+  const [favShowMeals, setFavShowMeals] = useState(true);
+  const [favShowSnacks, setFavShowSnacks] = useState(true);
+
+  const toggleFavMeals = () => { if (!favShowMeals || favShowSnacks) setFavShowMeals((v) => !v); };
+  const toggleFavSnacks = () => { if (!favShowSnacks || favShowMeals) setFavShowSnacks((v) => !v); };
+
+  // ── Library filter ──
+  const [libShowMeals, setLibShowMeals] = useState(true);
+  const [libShowSnacks, setLibShowSnacks] = useState(true);
+  const toggleLibMeals = () => { if (!libShowMeals || libShowSnacks) setLibShowMeals((v) => !v); };
+  const toggleLibSnacks = () => { if (!libShowSnacks || libShowMeals) setLibShowSnacks((v) => !v); };
+
+  // ── Friends view ──
+  const [friendsViewSearch, setFriendsViewSearch] = useState("");
+  const trimmedFriendsViewSearch = friendsViewSearch.trim().toLowerCase();
+  const [friendsViewSelectedFriends, setFriendsViewSelectedFriends] = useState<string[]>([]);
+  const [friendsViewShowFriendsFilter, setFriendsViewShowFriendsFilter] = useState(false);
+  const [friendsViewSelectedTags, setFriendsViewSelectedTags] = useState<string[]>([]);
+  const [friendsViewShowTagFilter, setFriendsViewShowTagFilter] = useState(false);
+
+  // ── Discover view ──
+  const [discoverSearch, setDiscoverSearch] = useState("");
+  const trimmedDiscoverSearch = discoverSearch.trim().toLowerCase();
+  const [discoverSelectedTags, setDiscoverSelectedTags] = useState<string[]>([]);
+  const [discoverShowTagFilter, setDiscoverShowTagFilter] = useState(false);
+
+  // ── Snacks section ──
   const [snackSearch, setSnackSearch] = useState("");
+  const trimmedSnackSearch = snackSearch.trim().toLowerCase();
   const [globalSnacks, setGlobalSnacks] = useState<GlobalIngredient[]>([]);
   const [globalSnacksLoading, setGlobalSnacksLoading] = useState(false);
   const [globalSnacksLoaded, setGlobalSnacksLoaded] = useState(false);
-  const [bookmarkingSnack, setBookmarkingSnack] = useState<string | null>(null);
 
-  // ── Snack modal handlers ──
-  const handleOpenNewSnack = () => { setEditingSnack(null); setIsSnackModalOpen(true); };
-  const handleOpenEditSnack = (ing: Ingredient) => { setEditingSnack(ing); setIsSnackModalOpen(true); };
-  const handleCloseSnackModal = () => { setIsSnackModalOpen(false); setEditingSnack(null); };
-
-  // ── Meals modal handlers ──
-  const handleOpenNewMeal = () => { setEditingMeal(null); setIsMealModalOpen(true); };
-  const handleOpenEditMeal = (meal: Meal) => { setEditingMeal(meal); setIsMealModalOpen(true); };
-  const handleCloseMealModal = () => { setIsMealModalOpen(false); setEditingMeal(null); };
-
-  const handleDeleteMeal = (mealId: string) => {
-    if (window.confirm("Are you sure you want to delete this meal?")) {
-      dispatch({ type: "DELETE_MEAL", payload: { mealId } });
-      if (user) deleteRecipeFromCloud(user.uid, mealId).catch(console.error);
-    }
-  };
-
-  // ── Load friends' recipes ──
+  // ── Load friends' recipes once ──
   useEffect(() => {
-    if (mode !== "meals" || mealsTab !== "yours" || !user || friendsLoaded) return;
+    if (!user || friendsLoaded) return;
     setFriendsLoading(true);
     loadFriendsRecipes(user.uid)
       .then((recipes) => {
@@ -84,56 +125,167 @@ export const MealLibrarySidebar: React.FC = () => {
       })
       .catch(console.error)
       .finally(() => setFriendsLoading(false));
-  }, [mode, mealsTab, user, friendsLoaded]);
+  }, [user, friendsLoaded]);
 
-  // ── Load global/discover recipes ──
+  // ── Load global snacks once ──
   useEffect(() => {
-    if (mode !== "meals" || mealsTab !== "discover" || discoverLoaded) return;
-    setDiscoverLoading(true);
-    loadGlobalRecipes()
-      .then((recipes) => { setDiscoverMeals(recipes); setDiscoverLoaded(true); })
-      .catch(console.error)
-      .finally(() => setDiscoverLoading(false));
-  }, [mode, mealsTab, discoverLoaded]);
-
-  // ── Reset caches on user change ──
-  useEffect(() => {
-    setFriendsLoaded(false); setFriendMeals([]);
-    setDiscoverLoaded(false); setDiscoverMeals([]);
-  }, [user?.uid]);
-
-  // ── Load global snacks on demand ──
-  useEffect(() => {
-    if (mode !== "snacks" || snacksTab !== "global" || globalSnacksLoaded) return;
+    if (globalSnacksLoaded) return;
     setGlobalSnacksLoading(true);
     loadGlobalSnacks()
       .then((snacks) => { setGlobalSnacks(snacks); setGlobalSnacksLoaded(true); })
       .catch(console.error)
       .finally(() => setGlobalSnacksLoading(false));
-  }, [mode, snacksTab, globalSnacksLoaded]);
+  }, [globalSnacksLoaded]);
 
-  // ── Meals filtering ──
+  // ── Load discover recipes when entering Discover view ──
+  useEffect(() => {
+    if (sidebarView !== "discover" || discoverLoaded) return;
+    setDiscoverLoading(true);
+    loadGlobalRecipes()
+      .then((recipes) => { setDiscoverMeals(recipes); setDiscoverLoaded(true); })
+      .catch(console.error)
+      .finally(() => setDiscoverLoading(false));
+  }, [sidebarView, discoverLoaded]);
+
+  // ── Reset caches on user change ──
+  useEffect(() => {
+    setFriendsLoaded(false);
+    setFriendMeals([]);
+    setDiscoverLoaded(false);
+    setDiscoverMeals([]);
+  }, [user?.uid]);
+
+  // ── Derived data ──
   const allTags = useMemo(
     () => Array.from(new Set(meals.flatMap((m) => m.tags || []))).sort(),
     [meals]
   );
-  const toggleTag = (tag: string) =>
-    setSelectedTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
 
-  const filteredOwnedMeals = meals.filter((m) => {
-    const matchesSearch = m.name.toLowerCase().includes(mealSearch.toLowerCase());
-    const matchesTags = selectedTags.length === 0 || selectedTags.every((t) => m.tags?.includes(t));
-    return matchesSearch && matchesTags;
-  });
-  const filteredFriendMeals = friendMeals.filter((m) =>
-    m.name.toLowerCase().includes(mealSearch.toLowerCase())
+  const friendAuthors = useMemo(
+    () => Array.from(new Set(friendMeals.map((m) => m.ownerDisplayName).filter(Boolean))),
+    [friendMeals]
   );
-  const filteredDiscover = discoverMeals.filter((m) =>
-    m.name.toLowerCase().includes(mealSearch.toLowerCase())
-  );
-  const bookmarkedIds = new Set(meals.map((m) => m.bookmarkedFromId).filter(Boolean));
 
-  const handleBookmark = async (recipe: DiscoverMeal) => {
+  const bookmarkedMealIds = useMemo(
+    () => new Set(meals.map((m) => m.bookmarkedFromId).filter(Boolean)),
+    [meals]
+  );
+
+  const discoverTags = useMemo(
+    () => Array.from(new Set(discoverMeals.flatMap((m) => (m as { tags?: string[] }).tags ?? []))).sort(),
+    [discoverMeals]
+  );
+
+  const discoverMealsAsCards = useMemo(() =>
+    discoverMeals.map((r) => ({ ...firestoreRecipeToMeal(r), ownerDisplayName: r.ownerDisplayName })),
+    [discoverMeals]
+  );
+
+  const visibleDiscoverMeals = useMemo(() => {
+    return discoverMealsAsCards.filter((m) => {
+      const matchesSearch = !trimmedDiscoverSearch || m.name.toLowerCase().includes(trimmedDiscoverSearch);
+      const matchesTags = discoverSelectedTags.length === 0 || discoverSelectedTags.every((t) => m.tags?.includes(t));
+      return matchesSearch && matchesTags;
+    });
+  }, [discoverMealsAsCards, trimmedDiscoverSearch, discoverSelectedTags]);
+
+  const favouriteMealIds = useMemo(
+    () => new Set(favourites.filter((f) => f.type === "meal").map((f) => f.id)),
+    [favourites]
+  );
+  const favouriteSnackIds = useMemo(
+    () => new Set(favourites.filter((f) => f.type === "snack").map((f) => f.id)),
+    [favourites]
+  );
+
+  const visibleMeals = useMemo(() => {
+    const ownedList = meals.filter((m) => {
+      if (favouriteMealIds.has(m.id)) return false;
+      const matchesSearch = !trimmedSearch || m.name.toLowerCase().includes(trimmedSearch);
+      const matchesTags = selectedTags.length === 0 || selectedTags.every((t) => m.tags?.includes(t));
+      return matchesSearch && matchesTags;
+    });
+    return ownedList;
+  }, [meals, trimmedSearch, selectedTags, favouriteMealIds]);
+
+  // ── Friends view derived data ──
+  const friendMealTags = useMemo(
+    () => Array.from(new Set(friendMeals.flatMap((m) => m.tags ?? []))).sort(),
+    [friendMeals]
+  );
+
+  const visibleFriendMeals = useMemo(() =>
+    friendMeals.filter((m) => {
+      const matchesSearch = !trimmedFriendsViewSearch || m.name.toLowerCase().includes(trimmedFriendsViewSearch);
+      const matchesFriends = friendsViewSelectedFriends.length === 0 || friendsViewSelectedFriends.includes(m.ownerDisplayName);
+      const matchesTags = friendsViewSelectedTags.length === 0 || friendsViewSelectedTags.every((t) => m.tags?.includes(t));
+      return matchesSearch && matchesFriends && matchesTags;
+    }),
+    [friendMeals, trimmedFriendsViewSearch, friendsViewSelectedFriends, friendsViewSelectedTags]
+  );
+
+  const friendMealsByAuthor = useMemo(() => {
+    const map = new Map<string, typeof visibleFriendMeals>();
+    visibleFriendMeals.forEach((m) => {
+      const key = m.ownerDisplayName || "Unknown";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(m);
+    });
+    return map;
+  }, [visibleFriendMeals]);
+
+  const visibleSnacks = useMemo(() => {
+    const nonFavourited = globalSnacks.filter((s) => !favouriteSnackIds.has(s.id));
+    if (!trimmedSnackSearch) return nonFavourited.slice(0, 12);
+    return nonFavourited.filter((s) => s.name.toLowerCase().includes(trimmedSnackSearch));
+  }, [globalSnacks, trimmedSnackSearch, favouriteSnackIds]);
+
+  const searchResults = useMemo(() => {
+    if (!isSearching) return null;
+    const mealResults = [...meals, ...friendMeals].filter((m) =>
+      m.name.toLowerCase().includes(trimmedSearch)
+    );
+    const snackResults = globalSnacks.filter((s) =>
+      s.name.toLowerCase().includes(trimmedSearch)
+    );
+    return { meals: mealResults, snacks: snackResults };
+  }, [isSearching, trimmedSearch, meals, friendMeals, globalSnacks]);
+
+  const favouriteMeals = useMemo(() =>
+    favourites
+      .filter((f) => f.type === "meal")
+      .map((f) => [...meals, ...friendMeals].find((m) => m.id === f.id))
+      .filter((m): m is Meal => m !== undefined),
+    [favourites, meals, friendMeals]
+  );
+
+  const favouriteSnacks = useMemo(() =>
+    favourites
+      .filter((f) => f.type === "snack")
+      .map((f) => globalSnacks.find((s) => s.id === f.id))
+      .filter((s): s is GlobalIngredient => s !== undefined),
+    [favourites, globalSnacks]
+  );
+
+  // ── Handlers ──
+  const handleToggleFavourite = (id: string, type: "meal" | "snack") => {
+    dispatch({ type: "TOGGLE_FAVOURITE", payload: { id, type } });
+    if (user) {
+      const next = favourites.some((f) => f.id === id && f.type === type)
+        ? favourites.filter((f) => !(f.id === id && f.type === type))
+        : [...favourites, { id, type }];
+      saveFavourites(user.uid, next).catch(console.error);
+    }
+  };
+
+  const handleDeleteMeal = (mealId: string) => {
+    if (window.confirm("Are you sure you want to delete this meal?")) {
+      dispatch({ type: "DELETE_MEAL", payload: { mealId } });
+      if (user) deleteRecipeFromCloud(user.uid, mealId).catch(console.error);
+    }
+  };
+
+  const handleBookmarkMeal = async (recipe: DiscoverMeal) => {
     if (!user) return;
     setBookmarking(recipe.id);
     try {
@@ -143,40 +295,28 @@ export const MealLibrarySidebar: React.FC = () => {
     finally { setBookmarking(null); }
   };
 
-  // ── Snack filtering ──
-  const mySnacks = useMemo(
-    () => ingredients.filter((i) => i.isSnack && i.source === "local"),
-    [ingredients]
-  );
-  const bookmarkedSnackIds = useMemo(
-    () => new Set(mySnacks.map((s) => s.bookmarkedFromId).filter(Boolean)),
-    [mySnacks]
-  );
-
-  const filteredMySnacks = useMemo(() => {
-    const q = snackSearch.trim().toLowerCase();
-    if (!q) return mySnacks;
-    return mySnacks.filter((i) => i.name.toLowerCase().includes(q));
-  }, [mySnacks, snackSearch]);
-
-  const filteredGlobalSnacks = useMemo(() => {
-    const q = snackSearch.trim().toLowerCase();
-    if (!q) return globalSnacks;
-    return globalSnacks.filter((i) => i.name.toLowerCase().includes(q));
-  }, [globalSnacks, snackSearch]);
-
   const handleBookmarkSnack = async (snack: GlobalIngredient) => {
     if (!user) return;
-    setBookmarkingSnack(snack.id);
     try {
       const bookmarked = await bookmarkSnack(user.uid, snack);
-      dispatch({
-        type: "ADD_INGREDIENT",
-        payload: { ...bookmarked, source: "local" as const },
-      });
+      dispatch({ type: "ADD_INGREDIENT", payload: { ...bookmarked, source: "local" as const } });
     } catch { alert("Failed to bookmark snack."); }
-    finally { setBookmarkingSnack(null); }
   };
+
+  const toggleTag = (tag: string) =>
+    setSelectedTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
+
+  const isMealFavourited = (id: string) => favourites.some((f) => f.id === id && f.type === "meal");
+  const isSnackFavourited = (id: string) => favourites.some((f) => f.id === id && f.type === "snack");
+
+  const handleDragStartSnack = (e: React.DragEvent, snackId: string) => {
+    e.dataTransfer.setData("text/plain", `snack:${snackId}`);
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
+  // suppress unused warning — ingredients is available for future use (snack editing)
+  void ingredients;
+  void handleBookmarkSnack;
 
   return (
     <>
@@ -184,115 +324,61 @@ export const MealLibrarySidebar: React.FC = () => {
 
         {/* ── Fixed header ── */}
         <div className={styles.sidebarHeader}>
-
-          {/* Mode toggle */}
-          <div className={styles.modeToggle}>
-            <button
-              className={`${styles.modeBtn} ${mode === "meals" ? styles.modeBtnActive : ""}`}
-              onClick={() => setMode("meals")}
-            >
-              Meals
-            </button>
-            <button
-              className={`${styles.modeBtn} ${mode === "snacks" ? styles.modeBtnActive : ""}`}
-              onClick={() => setMode("snacks")}
-            >
-              Snacks
-            </button>
-          </div>
-
-          {/* ── MEALS header controls ── */}
-          {mode === "meals" && (
-            <>
-              <div className={styles.headerTop}>
-                <h2 className={styles.sidebarTitle}>Meals</h2>
-                <Button onClick={handleOpenNewMeal} className={styles.newMealBtn}>
-                  + New Meal
-                </Button>
-              </div>
-
-              <div className={styles.tabRow}>
-                <button
-                  className={`${styles.tabBtn} ${mealsTab === "yours" ? styles.tabBtnActive : ""}`}
-                  onClick={() => setMealsTab("yours")}
-                >
-                  Your Recipes
-                </button>
-                <button
-                  className={`${styles.tabBtn} ${mealsTab === "discover" ? styles.tabBtnActive : ""}`}
-                  onClick={() => setMealsTab("discover")}
-                >
-                  Discover
-                </button>
-              </div>
-
-              <div className={styles.searchContainer}>
-                <input
-                  type="text"
-                  placeholder={mealsTab === "yours" ? "Search your recipes…" : "Search global recipes…"}
-                  className={styles.searchInput}
-                  value={mealSearch}
-                  onChange={(e) => setMealSearch(e.target.value)}
-                />
-              </div>
-
-              {mealsTab === "yours" && allTags.length > 0 && (
-                <div className={styles.tagFilters}>
-                  {allTags.map((tag) => (
+          <div className={styles.headerTop}>
+            {/* View switcher dropdown */}
+            <div className={styles.viewDropdown} ref={viewDropdownRef}>
+              <button
+                className={styles.viewDropdownTrigger}
+                onClick={() => setViewDropdownOpen((v) => !v)}
+              >
+                <span>{VIEW_LABELS[sidebarView]}</span>
+                <span className={`${styles.viewDropdownChevron} ${viewDropdownOpen ? styles.viewDropdownChevronOpen : ""}`}>
+                  ›
+                </span>
+              </button>
+              {viewDropdownOpen && (
+                <div className={styles.viewDropdownPanel}>
+                  {(["library", "discover", "friends"] as SidebarView[]).map((v) => (
                     <button
-                      key={tag}
-                      className={`${styles.tagFilter} ${selectedTags.includes(tag) ? styles.tagFilterActive : ""}`}
-                      onClick={() => toggleTag(tag)}
+                      key={v}
+                      className={`${styles.viewDropdownOption} ${sidebarView === v ? styles.viewDropdownOptionActive : ""}`}
+                      onClick={() => { setSidebarView(v); setViewDropdownOpen(false); }}
                     >
-                      {tag}
+                      {VIEW_LABELS[v]}
                     </button>
                   ))}
-                  {selectedTags.length > 0 && (
-                    <button className={styles.clearTagsBtn} onClick={() => setSelectedTags([])}>
-                      Clear
-                    </button>
-                  )}
                 </div>
               )}
-            </>
-          )}
+            </div>
+          </div>
 
-          {/* ── SNACKS header controls ── */}
-          {mode === "snacks" && (
+          {sidebarView === "library" && (
             <>
-              <div className={styles.headerTop}>
-                <h2 className={styles.sidebarTitle}>Snacks</h2>
-                {snacksTab === "mine" && (
-                  <button className={styles.newSnackBtn} onClick={handleOpenNewSnack}>
-                    + New Snack
-                  </button>
+              <div className={styles.searchContainer}>
+                <span className={styles.searchIcon}>⌕</span>
+                <input
+                  type="text"
+                  placeholder="Search meals & snacks…"
+                  className={styles.searchInput}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button className={styles.searchClear} onClick={() => setSearch("")}>×</button>
                 )}
               </div>
 
-              <div className={styles.tabRow}>
-                <button
-                  className={`${styles.tabBtn} ${snacksTab === "global" ? styles.tabBtnActive : ""}`}
-                  onClick={() => setSnacksTab("global")}
-                >
-                  Global
-                </button>
-                <button
-                  className={`${styles.tabBtn} ${snacksTab === "mine" ? styles.tabBtnActive : ""}`}
-                  onClick={() => setSnacksTab("mine")}
-                >
-                  My Snacks
-                </button>
-              </div>
-
-              <div className={styles.searchContainer}>
-                <input
-                  type="text"
-                  placeholder={snacksTab === "global" ? "Search global snacks…" : "Search my snacks…"}
-                  className={styles.searchInput}
-                  value={snackSearch}
-                  onChange={(e) => setSnackSearch(e.target.value)}
-                />
-              </div>
+              {/* Tags — only relevant when meals are visible in library */}
+              {!isSearching && libShowMeals && allTags.length > 0 && (
+                <div className={styles.headerFilters}>
+                  <button
+                    className={`${styles.filterToggle} ${showTagFilter ? styles.filterToggleActive : ""}`}
+                    onClick={() => setShowTagFilter((v) => !v)}
+                  >
+                    Tags{selectedTags.length > 0 ? ` (${selectedTags.length})` : ""}
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -300,138 +386,509 @@ export const MealLibrarySidebar: React.FC = () => {
         {/* ── Scrollable content ── */}
         <div className={styles.scrollableArea}>
 
-          {/* MEALS content */}
-          {mode === "meals" && mealsTab === "yours" && (
-            <div className={styles.cardList}>
-              {filteredOwnedMeals.map((meal) => (
-                <MealCard
-                  key={meal.id}
-                  meal={meal}
-                  onEdit={() => handleOpenEditMeal(meal)}
-                  onDelete={() => handleDeleteMeal(meal.id)}
-                />
-              ))}
-              {user && !friendsLoading && filteredFriendMeals.map((meal) => (
-                <MealCard
-                  key={meal.id}
-                  meal={meal}
-                  onEdit={() => handleOpenEditMeal(meal)}
-                  onDelete={() => handleDeleteMeal(meal.id)}
-                />
-              ))}
-              {filteredOwnedMeals.length === 0 && filteredFriendMeals.length === 0 && (
-                <div className={styles.noResults}>
-                  {meals.length === 0 ? "No meals yet — create one!" : "No meals found."}
+          {/* ── DISCOVER VIEW ── */}
+          {sidebarView === "discover" && (
+            <div className={styles.discoverView}>
+              {/* Search bar */}
+              <div className={styles.discoverViewHeader}>
+                <div className={styles.searchContainer}>
+                  <span className={styles.searchIcon}>⌕</span>
+                  <input
+                    type="text"
+                    placeholder="Search global recipes…"
+                    className={styles.searchInput}
+                    value={discoverSearch}
+                    onChange={(e) => setDiscoverSearch(e.target.value)}
+                  />
+                  {discoverSearch && (
+                    <button className={styles.searchClear} onClick={() => setDiscoverSearch("")}>×</button>
+                  )}
+                </div>
+                {discoverTags.length > 0 && (
+                  <div className={styles.headerFilters}>
+                    <button
+                      className={`${styles.filterToggle} ${discoverShowTagFilter ? styles.filterToggleActive : ""}`}
+                      onClick={() => setDiscoverShowTagFilter((v) => !v)}
+                    >
+                      Tags{discoverSelectedTags.length > 0 ? ` (${discoverSelectedTags.length})` : ""}
+                    </button>
+                  </div>
+                )}
+                {discoverShowTagFilter && discoverTags.length > 0 && (
+                  <div className={styles.tagFilters}>
+                    {discoverTags.map((tag) => (
+                      <button
+                        key={tag}
+                        className={`${styles.tagFilter} ${discoverSelectedTags.includes(tag) ? styles.tagFilterActive : ""}`}
+                        onClick={() => setDiscoverSelectedTags((prev) =>
+                          prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                        )}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                    {discoverSelectedTags.length > 0 && (
+                      <button className={styles.clearTagsBtn} onClick={() => setDiscoverSelectedTags([])}>Clear</button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Grid */}
+              {discoverLoading && <p className={styles.emptyMsg} style={{ padding: "20px" }}>Loading…</p>}
+              {!discoverLoading && (
+                <div className={styles.discoverViewGrid}>
+                  {visibleDiscoverMeals.map((meal) => {
+                    const alreadyBookmarked = bookmarkedMealIds.has(meal.bookmarkedFromId ?? meal.id);
+                    return (
+                      <div key={meal.id} className={styles.discoverGridCard}>
+                        <MealCard
+                          meal={meal}
+                          onEdit={() => {}}
+                          onDelete={() => {}}
+                          isFavourited={isMealFavourited(meal.id)}
+                          onFavourite={() => handleToggleFavourite(meal.id, "meal")}
+                        />
+                        {user && (
+                          <button
+                            className={`${styles.discoverSaveBtn} ${alreadyBookmarked ? styles.discoverSaveBtnSaved : ""}`}
+                            disabled={alreadyBookmarked || bookmarking === meal.id}
+                            onClick={() => {
+                              const raw = discoverMeals.find((r) => r.id === meal.id || r.id === meal.bookmarkedFromId);
+                              if (raw) handleBookmarkMeal(raw);
+                            }}
+                          >
+                            {alreadyBookmarked ? "Saved" : bookmarking === meal.id ? "…" : "+ Save"}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {visibleDiscoverMeals.length === 0 && !discoverLoading && (
+                    <p className={styles.emptyMsg} style={{ gridColumn: "1 / -1" }}>
+                      {discoverMeals.length === 0 ? "No global recipes yet." : "No results."}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {/* ── FRIENDS VIEW ── */}
+          {sidebarView === "friends" && (
+            <div className={styles.discoverView}>
+              {/* Header: search + filter buttons */}
+              <div className={styles.discoverViewHeader}>
+                <div className={styles.searchContainer}>
+                  <span className={styles.searchIcon}>⌕</span>
+                  <input
+                    type="text"
+                    placeholder="Search friends' recipes…"
+                    className={styles.searchInput}
+                    value={friendsViewSearch}
+                    onChange={(e) => setFriendsViewSearch(e.target.value)}
+                  />
+                  {friendsViewSearch && (
+                    <button className={styles.searchClear} onClick={() => setFriendsViewSearch("")}>×</button>
+                  )}
+                </div>
+
+                {(friendMealTags.length > 0 || friendAuthors.length > 0) && (
+                  <div className={styles.headerFilters}>
+                    {friendAuthors.length > 0 && (
+                      <button
+                        className={`${styles.filterToggle} ${friendsViewShowFriendsFilter ? styles.filterToggleActive : ""}`}
+                        onClick={() => setFriendsViewShowFriendsFilter((v) => !v)}
+                      >
+                        Friends{friendsViewSelectedFriends.length > 0 ? ` (${friendsViewSelectedFriends.length})` : ""}
+                      </button>
+                    )}
+                    {friendMealTags.length > 0 && (
+                      <button
+                        className={`${styles.filterToggle} ${friendsViewShowTagFilter ? styles.filterToggleActive : ""}`}
+                        onClick={() => setFriendsViewShowTagFilter((v) => !v)}
+                      >
+                        Tags{friendsViewSelectedTags.length > 0 ? ` (${friendsViewSelectedTags.length})` : ""}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {friendsViewShowFriendsFilter && friendAuthors.length > 0 && (
+                  <div className={styles.tagFilters}>
+                    {friendAuthors.map((author) => (
+                      <button
+                        key={author}
+                        className={`${styles.tagFilter} ${friendsViewSelectedFriends.includes(author) ? styles.tagFilterActive : ""}`}
+                        onClick={() => setFriendsViewSelectedFriends((prev) =>
+                          prev.includes(author) ? prev.filter((a) => a !== author) : [...prev, author]
+                        )}
+                      >
+                        {author}
+                      </button>
+                    ))}
+                    {friendsViewSelectedFriends.length > 0 && (
+                      <button className={styles.clearTagsBtn} onClick={() => setFriendsViewSelectedFriends([])}>Clear</button>
+                    )}
+                  </div>
+                )}
+
+                {friendsViewShowTagFilter && friendMealTags.length > 0 && (
+                  <div className={styles.tagFilters}>
+                    {friendMealTags.map((tag) => (
+                      <button
+                        key={tag}
+                        className={`${styles.tagFilter} ${friendsViewSelectedTags.includes(tag) ? styles.tagFilterActive : ""}`}
+                        onClick={() => setFriendsViewSelectedTags((prev) =>
+                          prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                        )}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                    {friendsViewSelectedTags.length > 0 && (
+                      <button className={styles.clearTagsBtn} onClick={() => setFriendsViewSelectedTags([])}>Clear</button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Loading state */}
+              {friendsLoading && <p className={styles.emptyMsg} style={{ padding: "20px" }}>Loading…</p>}
+
+              {/* Not logged in */}
+              {!user && !friendsLoading && (
+                <div className={styles.blankView}>
+                  <span className={styles.blankViewIcon}>👥</span>
+                  <p className={styles.blankViewTitle}>Sign in to see friends' recipes</p>
+                </div>
+              )}
+
+              {/* Grouped by friend */}
+              {user && !friendsLoading && (
+                friendMealsByAuthor.size === 0
+                  ? <p className={styles.emptyMsg} style={{ padding: "20px" }}>No results.</p>
+                  : <div style={{ paddingBottom: 40 }}>
+                      {Array.from(friendMealsByAuthor.entries()).map(([author, authorMeals]) => (
+                        <div key={author} className={styles.friendsGroup}>
+                          <p className={styles.friendsGroupLabel}>{author}</p>
+                          <div className={`${styles.discoverViewGrid} ${styles.friendsGroupGrid}`}>
+                            {authorMeals.map((meal) => (
+                              <MealCard
+                                key={meal.id}
+                                meal={{ ...meal, ownerDisplayName: undefined }}
+                                onEdit={() => { setEditingMeal(meal); setIsMealModalOpen(true); }}
+                                onDelete={() => handleDeleteMeal(meal.id)}
+                                isFavourited={isMealFavourited(meal.id)}
+                                onFavourite={() => handleToggleFavourite(meal.id, "meal")}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+              )}
+            </div>
+          )}
+
+          {/* ── LIBRARY VIEW ── */}
+          {sidebarView === "library" && (<>
+
+          {/* ── SEARCH RESULTS ── */}
+          {isSearching && searchResults && (
+            <div className={styles.searchResults}>
+              {searchResults.meals.length === 0 && searchResults.snacks.length === 0 && (
+                <p className={styles.emptyMsg}>No results for "{search}"</p>
+              )}
+
+              {searchResults.meals.length > 0 && (
+                <div className={styles.resultSection}>
+                  <p className={styles.resultSectionLabel}>Meals</p>
+                  <div className={styles.cardList}>
+                    {searchResults.meals.map((meal) => (
+                      <MealCard
+                        key={meal.id}
+                        meal={meal}
+                        onEdit={() => { setEditingMeal(meal); setIsMealModalOpen(true); }}
+                        onDelete={() => handleDeleteMeal(meal.id)}
+                        isFavourited={isMealFavourited(meal.id)}
+                        onFavourite={() => handleToggleFavourite(meal.id, "meal")}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {searchResults.snacks.length > 0 && (
+                <div className={styles.resultSection}>
+                  <p className={styles.resultSectionLabel}>Snacks</p>
+                  <div className={styles.snackList}>
+                    {searchResults.snacks.map((snack) => (
+                      <SnackPoolItem
+                        key={snack.id}
+                        snack={snack}
+                        isFavourited={isSnackFavourited(snack.id)}
+                        onFavourite={() => handleToggleFavourite(snack.id, "snack")}
+                        onDragStart={handleDragStartSnack}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {mode === "meals" && mealsTab === "discover" && (
-            <div className={styles.cardList}>
-              {discoverLoading && <div className={styles.noResults}>Loading…</div>}
-              {!discoverLoading && discoverLoaded && filteredDiscover.length === 0 && (
-                <div className={styles.noResults}>
-                  {discoverMeals.length === 0 ? "No global recipes yet." : "No recipes match your search."}
-                </div>
-              )}
-              {filteredDiscover.map((recipe) => {
-                const alreadyBookmarked = bookmarkedIds.has(recipe.id);
-                return (
-                  <div key={recipe.id} className={styles.discoverCard}>
-                    {recipe.photoUrl && (
-                      <img src={recipe.photoUrl} alt={recipe.name} className={styles.discoverCardImage} />
-                    )}
-                    <div className={styles.discoverCardContent}>
-                      <span className={styles.discoverCardName}>{recipe.name}</span>
-                      <span className={styles.discoverCardAttribution}>by {recipe.ownerDisplayName}</span>
-                      {recipe.tags?.length > 0 && (
-                        <div className={styles.cardTags}>
-                          {recipe.tags.map((tag) => (
-                            <span key={tag} className={styles.cardTag}>{tag}</span>
-                          ))}
-                        </div>
+          {/* ── BROWSE MODE ── */}
+          {!isSearching && (<>
+              {/* Favourites */}
+              {(favouriteMeals.length > 0 || favouriteSnacks.length > 0) && (
+                <section className={styles.section}>
+                  <div className={styles.sectionHeader}>
+                    <span className={styles.sectionTitle}>★ Favourites</span>
+                    <div className={styles.sectionActions}>
+                      {favouriteMeals.length > 0 && (
+                        <button
+                          className={`${styles.filterToggle} ${favShowMeals ? styles.filterToggleActive : ""}`}
+                          onClick={toggleFavMeals}
+                        >
+                          Meals
+                        </button>
+                      )}
+                      {favouriteSnacks.length > 0 && (
+                        <button
+                          className={`${styles.filterToggle} ${favShowSnacks ? styles.filterToggleActive : ""}`}
+                          onClick={toggleFavSnacks}
+                        >
+                          Snacks
+                        </button>
                       )}
                     </div>
-                    {user && (
-                      <div className={styles.discoverCardFooter}>
+                  </div>
+
+                  {favShowMeals && favouriteMeals.length > 0 && (
+                    <>
+                      {favShowSnacks && favouriteSnacks.length > 0 && (
+                        <p className={styles.favouriteSubLabel}>Meals</p>
+                      )}
+                      <div className={styles.cardList}>
+                        {favouriteMeals.map((meal) => (
+                          <MealCard
+                            key={meal.id}
+                            meal={meal}
+                            onEdit={() => { setEditingMeal(meal); setIsMealModalOpen(true); }}
+                            onDelete={() => handleDeleteMeal(meal.id)}
+                            isFavourited={true}
+                            onFavourite={() => handleToggleFavourite(meal.id, "meal")}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {favShowSnacks && favouriteSnacks.length > 0 && (
+                    <>
+                      {favShowMeals && favouriteMeals.length > 0 && (
+                        <p className={styles.favouriteSubLabel}>Snacks</p>
+                      )}
+                      <div className={styles.snackList}>
+                        {favouriteSnacks.map((snack) => (
+                          <SnackPoolItem
+                            key={snack.id}
+                            snack={snack}
+                            isFavourited={true}
+                            onFavourite={() => handleToggleFavourite(snack.id, "snack")}
+                            onDragStart={handleDragStartSnack}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </section>
+              )}
+
+              {/* Library */}
+              <section className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <span className={styles.sectionTitle}>Library</span>
+                  <div className={styles.sectionActions}>
+                    <button
+                      className={`${styles.filterToggle} ${libShowMeals ? styles.filterToggleActive : ""}`}
+                      onClick={toggleLibMeals}
+                    >
+                      Meals
+                    </button>
+                    <button
+                      className={`${styles.filterToggle} ${libShowSnacks ? styles.filterToggleActive : ""}`}
+                      onClick={toggleLibSnacks}
+                    >
+                      Snacks
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Meals ── */}
+                {libShowMeals && (
+                  <>
+                    <div className={styles.subSectionHeader}>
+                      <span className={styles.favouriteSubLabel}>Meals</span>
+                      <button
+                        className={styles.newMealBtn}
+                        onClick={() => { setEditingMeal(null); setIsMealModalOpen(true); }}
+                      >
+                        + New
+                      </button>
+                    </div>
+
+                    {/* Tag filter */}
+                    {showTagFilter && allTags.length > 0 && (
+                      <div className={styles.tagFilters}>
+                        {allTags.map((tag) => (
+                          <button
+                            key={tag}
+                            className={`${styles.tagFilter} ${selectedTags.includes(tag) ? styles.tagFilterActive : ""}`}
+                            onClick={() => toggleTag(tag)}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                        {selectedTags.length > 0 && (
+                          <button className={styles.clearTagsBtn} onClick={() => setSelectedTags([])}>Clear</button>
+                        )}
+                      </div>
+                    )}
+
+                    <div className={styles.cardList}>
+                      {visibleMeals.map((meal) => (
+                        <MealCard
+                          key={meal.id}
+                          meal={meal}
+                          onEdit={() => { setEditingMeal(meal); setIsMealModalOpen(true); }}
+                          onDelete={() => handleDeleteMeal(meal.id)}
+                          isFavourited={isMealFavourited(meal.id)}
+                          onFavourite={() => handleToggleFavourite(meal.id, "meal")}
+                        />
+                      ))}
+                      {visibleMeals.length === 0 && (
+                        <p className={styles.emptyMsg}>
+                          {meals.length === 0 ? "No meals yet — create one!" : "No meals match your filters."}
+                        </p>
+                      )}
+                    </div>
+
+                  </>
+                )}
+
+                {/* ── Snacks ── */}
+                {libShowSnacks && (
+                  <>
+                    <div className={styles.subSectionHeader}>
+                      <span className={styles.favouriteSubLabel}>Snacks</span>
+                      <button
+                        className={styles.newSnackBtn}
+                        onClick={() => { setEditingSnack(null); setIsSnackModalOpen(true); }}
+                      >
+                        + New
+                      </button>
+                    </div>
+
+                    <div className={styles.snackSearchContainer}>
+                      <input
+                        type="text"
+                        placeholder="Search snack pool…"
+                        className={styles.snackSearchInput}
+                        value={snackSearch}
+                        onChange={(e) => setSnackSearch(e.target.value)}
+                      />
+                    </div>
+
+                    {globalSnacksLoading && <p className={styles.emptyMsg}>Loading snacks…</p>}
+
+                    {!globalSnacksLoading && visibleSnacks.length === 0 && trimmedSnackSearch && (
+                      <div className={styles.snackNoResults}>
+                        <p className={styles.emptyMsg}>Nothing found for "{snackSearch}"</p>
                         <button
-                          className={styles.bookmarkBtn}
-                          disabled={alreadyBookmarked || bookmarking === recipe.id}
-                          onClick={() => handleBookmark(recipe)}
+                          className={styles.newSnackInlineBtn}
+                          onClick={() => { setEditingSnack(null); setIsSnackModalOpen(true); }}
                         >
-                          {alreadyBookmarked ? "Bookmarked" : bookmarking === recipe.id ? "Saving…" : "Bookmark"}
+                          + Create "{snackSearch}"
                         </button>
                       </div>
                     )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
 
-          {/* SNACKS content — Global tab */}
-          {mode === "snacks" && snacksTab === "global" && (
-            <div className={styles.snackGrid}>
-              {globalSnacksLoading && (
-                <div className={styles.snackEmpty}>Loading…</div>
-              )}
-              {!globalSnacksLoading && filteredGlobalSnacks.length === 0 && (
-                <div className={styles.snackEmpty}>
-                  {globalSnacksLoaded && globalSnacks.length === 0
-                    ? "No global snacks yet."
-                    : "No snacks match your search."}
-                </div>
-              )}
-              {filteredGlobalSnacks.map((snack) => {
-                const isBookmarked = bookmarkedSnackIds.has(snack.id);
-                return (
-                  <SnackCard
-                    key={snack.id}
-                    ingredient={{ ...snack, source: "global" as const }}
-                    onBookmark={user ? () => handleBookmarkSnack(snack) : undefined}
-                    isBookmarking={bookmarkingSnack === snack.id}
-                    isBookmarked={isBookmarked}
-                  />
-                );
-              })}
-            </div>
-          )}
+                    {!globalSnacksLoading && (
+                      <div className={styles.snackList}>
+                        {visibleSnacks.map((snack) => (
+                          <SnackPoolItem
+                            key={snack.id}
+                            snack={snack}
+                            isFavourited={isSnackFavourited(snack.id)}
+                            onFavourite={() => handleToggleFavourite(snack.id, "snack")}
+                            onDragStart={handleDragStartSnack}
+                          />
+                        ))}
+                      </div>
+                    )}
 
-          {/* SNACKS content — My Snacks tab */}
-          {mode === "snacks" && snacksTab === "mine" && (
-            <div className={styles.snackGrid}>
-              {filteredMySnacks.length === 0 && (
-                <div className={styles.snackEmpty}>
-                  {mySnacks.length === 0
-                    ? "No snacks yet — bookmark from Global or add a new one."
-                    : "No snacks match your search."}
-                </div>
-              )}
-              {filteredMySnacks.map((ing) => (
-                <SnackCard
-                  key={ing.id}
-                  ingredient={ing}
-                  onEdit={() => handleOpenEditSnack(ing)}
-                />
-              ))}
-            </div>
-          )}
+                    {!trimmedSnackSearch && !globalSnacksLoading && globalSnacks.length === 0 && (
+                      <p className={styles.emptyMsg}>No snacks in pool yet.</p>
+                    )}
+                  </>
+                )}
+              </section>
+            </>)}
+
+          </>)}
         </div>
       </div>
 
       <MealFormModal
         isOpen={isMealModalOpen}
-        onClose={handleCloseMealModal}
+        onClose={() => { setIsMealModalOpen(false); setEditingMeal(null); }}
         initialData={editingMeal}
       />
-
       {isSnackModalOpen && (
         <SnackFormModal
           initialData={editingSnack}
-          onClose={handleCloseSnackModal}
+          onClose={() => { setIsSnackModalOpen(false); setEditingSnack(null); }}
         />
       )}
     </>
   );
 };
+
+// ── Snack pool item ──────────────────────────────────────────
+interface SnackPoolItemProps {
+  snack: GlobalIngredient;
+  isFavourited: boolean;
+  onFavourite: () => void;
+  onDragStart: (e: React.DragEvent, id: string) => void;
+}
+
+const SnackPoolItem: React.FC<SnackPoolItemProps> = ({ snack, isFavourited, onFavourite, onDragStart }) => {
+  const gradient = CATEGORY_GRADIENTS[snack.category] ?? CATEGORY_GRADIENTS["Other"];
+  const initial = snack.name.trim()[0]?.toUpperCase() ?? "?";
+
+  return (
+    <div
+      className={styles.snackPoolItem}
+      draggable="true"
+      onDragStart={(e) => onDragStart(e, snack.id)}
+    >
+      <div className={styles.snackPoolThumb} style={{ background: gradient }}>
+        {snack.photoUrl
+          ? <img src={snack.photoUrl} alt={snack.name} className={styles.snackPoolThumbImg} draggable="false" />
+          : <span className={styles.snackPoolInitial}>{initial}</span>
+        }
+      </div>
+      <span className={styles.snackPoolName}>{snack.name}</span>
+      <button
+        className={`${styles.snackStarBtn} ${isFavourited ? styles.snackStarBtnActive : ""}`}
+        onClick={(e) => { e.stopPropagation(); onFavourite(); }}
+        draggable="false"
+        title={isFavourited ? "Remove from Favourites" : "Add to Favourites"}
+      >
+        {isFavourited ? "★" : "☆"}
+      </button>
+    </div>
+  );
+};
+

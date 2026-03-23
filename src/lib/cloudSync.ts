@@ -29,7 +29,7 @@ import type {
   FirestoreShoppingList,
   FirestoreUser,
 } from "./firestoreTypes";
-import type { AppState, Meal, PlannedMeal, PlannedSnack, CustomUnit, ShoppingListSettings, User, Ingredient } from "../types";
+import type { AppState, Meal, PlannedMeal, PlannedSnack, CustomUnit, ShoppingListSettings, User, Ingredient, FavouriteItem } from "../types";
 
 // localStorage key — value is the uid that was last synced on this device.
 export const CLOUD_SYNCED_KEY = "mealplanner_cloud_synced";
@@ -159,7 +159,7 @@ export async function syncFromCloud(
   uid: string,
   localMeals: Meal[],
   localCustomUnits: CustomUnit[]
-): Promise<{ meals: Meal[]; customUnits: CustomUnit[]; plan: PlannedMeal[]; snacks: PlannedSnack[]; users: User[] | null; ingredients: Ingredient[] }> {
+): Promise<{ meals: Meal[]; customUnits: CustomUnit[]; plan: PlannedMeal[]; snacks: PlannedSnack[]; users: User[] | null; ingredients: Ingredient[]; favourites: FavouriteItem[] | null }> {
   console.log("[syncFromCloud] Starting for uid:", uid, "| localMeals:", localMeals.length, "| localCustomUnits:", localCustomUnits.length);
   // Read recipes from subcollection
   const recipesRef = collection(db, "users", uid, "recipes").withConverter(recipeConverter);
@@ -260,6 +260,9 @@ export async function syncFromCloud(
   const cloudUsers: User[] | null = userDocSnap.exists()
     ? (userDocSnap.data().users ?? null)
     : null;
+  const cloudFavourites: FavouriteItem[] | null = userDocSnap.exists()
+    ? (userDocSnap.data().favourites ?? null)
+    : null;
 
   // Load ingredients: global catalogue + user's local (unreviewed) ingredients
   const [globalIngSnap, localIngSnap] = await Promise.all([
@@ -298,6 +301,7 @@ export async function syncFromCloud(
     snacks,
     users: cloudUsers,
     ingredients,
+    favourites: cloudFavourites,
   };
 }
 
@@ -859,6 +863,14 @@ export async function saveHouseholdUsers(
 ): Promise<void> {
   const userRef = doc(db, "users", uid);
   await updateDoc(userRef, { users });
+}
+
+export async function saveFavourites(
+  uid: string,
+  favourites: FavouriteItem[]
+): Promise<void> {
+  const userRef = doc(db, "users", uid);
+  await updateDoc(userRef, { favourites });
 }
 
 export async function saveSnackToCloud(

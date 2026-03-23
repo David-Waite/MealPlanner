@@ -4,36 +4,22 @@
   gap: var(--spacing-2);
 }
 
-/* Wrapper for each avatar so we can show the delete button */
+/* Each avatar — no delete button overlay */
 .avatarWrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.deleteUserBtn {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #e53e3e;
-  color: #fff;
-  border: 2px solid #fff;
-  font-size: 11px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.avatarClickTarget {
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 120ms ease;
-  padding: 0;
+  border-radius: 50%;
+  /* Double-click highlight */
+  transition: box-shadow 120ms ease;
 }
 
-.avatarWrapper:hover .deleteUserBtn {
-  opacity: 1;
+.avatarClickTarget:active {
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.35);
 }
 
 /* "+" circle to open the form */
@@ -63,8 +49,8 @@
   background: rgba(102, 126, 234, 0.06);
 }
 
-/* Dropdown form panel */
-.addForm {
+/* Shared popover panel (add & edit) */
+.popover {
   position: absolute;
   top: calc(100% + 10px);
   left: 50%;
@@ -77,7 +63,7 @@
     0 8px 24px rgba(0, 0, 0, 0.12),
     0 2px 6px rgba(0, 0, 0, 0.06);
   z-index: 200;
-  width: 200px;
+  width: 210px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -89,7 +75,7 @@
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-.addFormTitle {
+.popoverTitle {
   font-size: 0.8rem;
   font-weight: 700;
   color: #2d3748;
@@ -153,7 +139,7 @@
   transform: scale(1.15);
 }
 
-/* Add button */
+/* ── Add mode: single button ── */
 .addBtn {
   background: #667eea;
   color: #fff;
@@ -171,6 +157,58 @@
 }
 
 .addBtn:disabled {
+  background: #e2e8f0;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+/* ── Edit mode: delete + save row ── */
+.editActions {
+  display: flex;
+  gap: 8px;
+}
+
+.deleteBtn {
+  flex: 1;
+  background: transparent;
+  color: #e53e3e;
+  border: 1.5px solid #feb2b2;
+  border-radius: 8px;
+  padding: 7px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: #fff5f5;
+  border-color: #e53e3e;
+}
+
+.deleteBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.saveBtn {
+  flex: 1;
+  background: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: #5a67d8;
+}
+
+.saveBtn:disabled {
   background: #e2e8f0;
   color: #a0aec0;
   cursor: not-allowed;

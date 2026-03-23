@@ -1,4 +1,4 @@
-import type { Meal, PlannedMeal, PlannedSnack, CustomUnit, Ingredient, ShoppingListSettings, User } from "../types";
+import type { Meal, PlannedMeal, PlannedSnack, CustomUnit, Ingredient, ShoppingListSettings, User, FavouriteItem } from "../types";
 
 export type MergeCloudPayload = {
   meals: Meal[];
@@ -7,6 +7,7 @@ export type MergeCloudPayload = {
   snacks?: PlannedSnack[];
   users?: User[];
   ingredients?: Ingredient[];
+  favourites?: FavouriteItem[];
 };
 
 export type Action =
@@ -20,6 +21,7 @@ export type Action =
   | { type: "REMOVE_PLANNED_SNACK"; payload: { instanceId: string } }
   | { type: "UPDATE_PLANNED_SNACK"; payload: PlannedSnack }
   | { type: "ADD_USER"; payload: User }
+  | { type: "UPDATE_USER"; payload: User }
   | { type: "DELETE_USER"; payload: { userId: string } }
   | { type: "SET_SELECTED_USERS"; payload: string[] }
   | { type: "SET_SELECTED_DATES"; payload: string[] }
@@ -30,4 +32,5 @@ export type Action =
   | { type: "UPDATE_CUSTOM_UNIT"; payload: CustomUnit }
   | { type: "DELETE_CUSTOM_UNIT"; payload: { customUnitId: string } }
   | { type: "SET_SHOPPING_LIST_SETTINGS"; payload: Partial<ShoppingListSettings> }
+  | { type: "TOGGLE_FAVOURITE"; payload: FavouriteItem }
   | { type: "MERGE_CLOUD_DATA"; payload: MergeCloudPayload };

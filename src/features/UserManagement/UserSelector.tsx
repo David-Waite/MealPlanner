@@ -3,9 +3,9 @@ import { useAppState, useAppDispatch } from "../../context/hooks";
 import { useAuth } from "../../context/AuthContext";
 import { Avatar } from "../../components/Avatar/Avatar";
 import { saveHouseholdUsers } from "../../lib/cloudSync";
+import type { User } from "../../types";
 import styles from "./UserSelector.module.css";
 
-// Preset palette for new user colours
 const COLOR_PALETTE = [
   "#4A90E2", "#D0021B", "#7ED321", "#F5A623",
   "#9B59B6", "#1ABC9C", "#E67E22", "#E91E63",
@@ -18,151 +18,214 @@ function generateInitials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase();
 }
 
+type PopoverMode = "add" | "edit";
+
+interface PopoverState {
+  mode: PopoverMode;
+  editingUser?: User;
+}
+
 export const UserSelector: React.FC = () => {
   const { users, selectedUserIds } = useAppState();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState(COLOR_PALETTE[0]);
+  // Shared popover state
+  const [popover, setPopover] = useState<PopoverState | null>(null);
+  const [nameValue, setNameValue] = useState("");
+  const [colorValue, setColorValue] = useState(COLOR_PALETTE[0]);
   const formRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Close form on outside click
+  const isOpen = popover !== null;
+
+  // Close on outside click
   useEffect(() => {
-    if (!isFormOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
       if (formRef.current && !formRef.current.contains(e.target as Node)) {
-        setIsFormOpen(false);
-        setNewName("");
+        setPopover(null);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isFormOpen]);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isOpen]);
 
-  // Auto-focus input when form opens
+  // Auto-focus input when popover opens
   useEffect(() => {
-    if (isFormOpen) inputRef.current?.focus();
-  }, [isFormOpen]);
+    if (isOpen) setTimeout(() => inputRef.current?.focus(), 30);
+  }, [isOpen]);
 
-  const handleUserToggle = (userId: string) => {
+  const openAdd = () => {
+    setNameValue("");
+    setColorValue(COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)]);
+    setPopover({ mode: "add" });
+  };
+
+  const openEdit = (u: User) => {
+    setNameValue(u.initials);
+    setColorValue(u.color);
+    setPopover({ mode: "edit", editingUser: u });
+  };
+
+  const handleUserClick = (userId: string) => {
     const isSelected = selectedUserIds.includes(userId);
-    let newSelectedIds: string[];
+    let newIds: string[];
     if (isSelected) {
-      newSelectedIds = selectedUserIds.filter((id) => id !== userId);
-      if (newSelectedIds.length === 0) newSelectedIds = [userId];
+      newIds = selectedUserIds.filter((id) => id !== userId);
+      if (newIds.length === 0) newIds = [userId];
     } else {
-      newSelectedIds = [...selectedUserIds, userId];
+      newIds = [...selectedUserIds, userId];
     }
-    dispatch({ type: "SET_SELECTED_USERS", payload: newSelectedIds });
+    dispatch({ type: "SET_SELECTED_USERS", payload: newIds });
   };
 
   const handleAddUser = () => {
-    const trimmed = newName.trim();
+    const trimmed = nameValue.trim();
     if (!trimmed) return;
 
-    const newUser = {
+    const newUser: User = {
       id: `u_${Date.now()}`,
       initials: generateInitials(trimmed),
-      color: newColor,
+      color: colorValue,
     };
 
     dispatch({ type: "ADD_USER", payload: newUser });
-
-    // Auto-select the new user
     dispatch({ type: "SET_SELECTED_USERS", payload: [...selectedUserIds, newUser.id] });
-
-    // Persist to cloud
-    if (user) {
-      saveHouseholdUsers(user.uid, [...users, newUser]).catch(console.error);
-    }
-
-    setNewName("");
-    setNewColor(COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)]);
-    setIsFormOpen(false);
+    if (user) saveHouseholdUsers(user.uid, [...users, newUser]).catch(console.error);
+    setPopover(null);
   };
 
-  const handleDeleteUser = (e: React.MouseEvent, userId: string) => {
-    e.stopPropagation();
-    if (users.length <= 1) return; // keep at least one
+  const handleSaveEdit = () => {
+    const trimmed = nameValue.trim();
+    if (!trimmed || !popover?.editingUser) return;
+
+    const updated: User = {
+      ...popover.editingUser,
+      initials: trimmed.length <= 3 ? trimmed.toUpperCase() : generateInitials(trimmed),
+      color: colorValue,
+    };
+
+    dispatch({ type: "UPDATE_USER", payload: updated });
+    if (user) {
+      saveHouseholdUsers(user.uid, users.map((u) => u.id === updated.id ? updated : u))
+        .catch(console.error);
+    }
+    setPopover(null);
+  };
+
+  const handleDeleteUser = () => {
+    if (!popover?.editingUser) return;
+    if (users.length <= 1) return;
+    const userId = popover.editingUser.id;
     dispatch({ type: "DELETE_USER", payload: { userId } });
     if (user) {
       saveHouseholdUsers(user.uid, users.filter((u) => u.id !== userId)).catch(console.error);
     }
+    setPopover(null);
   };
+
+  const previewInitials = nameValue.trim()
+    ? nameValue.trim().length <= 3
+      ? nameValue.trim().toUpperCase()
+      : generateInitials(nameValue)
+    : null;
+
+  const isAdd = popover?.mode === "add";
 
   return (
     <div className={styles.userSelector}>
       {users.map((u) => (
         <div key={u.id} className={styles.avatarWrapper}>
-          <div onClick={() => handleUserToggle(u.id)}>
+          <div
+            onClick={() => handleUserClick(u.id)}
+            onDoubleClick={() => openEdit(u)}
+            className={styles.avatarClickTarget}
+            title="Click to toggle · Double-click to edit"
+          >
             <Avatar
               initials={u.initials}
               bgColor={u.color}
               selected={selectedUserIds.includes(u.id)}
             />
           </div>
-          {users.length > 1 && (
-            <button
-              className={styles.deleteUserBtn}
-              onClick={(e) => handleDeleteUser(e, u.id)}
-              title={`Remove ${u.initials}`}
-            >
-              &times;
-            </button>
-          )}
         </div>
       ))}
 
-      {/* Add new user */}
+      {/* Add button + shared popover anchor */}
       <div className={styles.addWrapper} ref={formRef}>
         <button
           className={styles.addUserCircle}
-          onClick={() => setIsFormOpen((v) => !v)}
+          onClick={isOpen && isAdd ? () => setPopover(null) : openAdd}
           title="Add person"
         >
           +
         </button>
 
-        {isFormOpen && (
-          <div className={styles.addForm}>
-            <p className={styles.addFormTitle}>Add person</p>
+        {isOpen && (
+          <div className={styles.popover}>
+            <p className={styles.popoverTitle}>
+              {isAdd ? "Add person" : "Edit person"}
+            </p>
+
             <input
               ref={inputRef}
               type="text"
               className={styles.nameInput}
-              placeholder="Name (e.g. Sarah)"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleAddUser(); if (e.key === "Escape") setIsFormOpen(false); }}
+              placeholder={isAdd ? "Name (e.g. Sarah)" : "Name or initials"}
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") isAdd ? handleAddUser() : handleSaveEdit();
+                if (e.key === "Escape") setPopover(null);
+              }}
               maxLength={30}
             />
-            {/* Preview initials */}
-            {newName.trim() && (
-              <div className={styles.initialsPreview} style={{ backgroundColor: newColor }}>
-                {generateInitials(newName)}
+
+            {previewInitials && (
+              <div className={styles.initialsPreview} style={{ backgroundColor: colorValue }}>
+                {previewInitials}
               </div>
             )}
-            {/* Colour palette */}
+
             <div className={styles.palette}>
               {COLOR_PALETTE.map((c) => (
                 <button
                   key={c}
-                  className={`${styles.paletteColor} ${newColor === c ? styles.paletteColorActive : ""}`}
+                  className={`${styles.paletteColor} ${colorValue === c ? styles.paletteColorActive : ""}`}
                   style={{ backgroundColor: c }}
-                  onClick={() => setNewColor(c)}
+                  onClick={() => setColorValue(c)}
                 />
               ))}
             </div>
-            <button
-              className={styles.addBtn}
-              onClick={handleAddUser}
-              disabled={!newName.trim()}
-            >
-              Add
-            </button>
+
+            {isAdd ? (
+              <button
+                className={styles.addBtn}
+                onClick={handleAddUser}
+                disabled={!nameValue.trim()}
+              >
+                Add
+              </button>
+            ) : (
+              <div className={styles.editActions}>
+                <button
+                  className={styles.deleteBtn}
+                  onClick={handleDeleteUser}
+                  disabled={users.length <= 1}
+                  title={users.length <= 1 ? "Can't delete the only person" : undefined}
+                >
+                  Delete
+                </button>
+                <button
+                  className={styles.saveBtn}
+                  onClick={handleSaveEdit}
+                  disabled={!nameValue.trim()}
+                >
+                  Save
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
