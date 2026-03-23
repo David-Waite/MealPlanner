@@ -9,5 +9,11 @@ service firebase.storage {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Ingredient / snack photos — owner-scoped, public read for global snacks
+    match /ingredients/{userId}/{ingredientId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }

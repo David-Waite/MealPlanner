@@ -138,6 +138,82 @@
   border-color: #feb2b2;
 }
 
+/* ── Mode Toggle (Meals / Snacks) ── */
+.modeToggle {
+  display: flex;
+  background: rgba(0,0,0,0.05);
+  border-radius: 14px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.modeBtn {
+  flex: 1;
+  padding: 8px 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 180ms ease;
+  letter-spacing: -0.01em;
+}
+
+.modeBtn:hover {
+  color: var(--color-text-primary);
+}
+
+.modeBtnActive {
+  background: #ffffff;
+  color: #1a202c;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* ── New Snack button ── */
+.newSnackBtn {
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(159,122,234,0.12);
+  color: #6b46c1;
+  cursor: pointer;
+  transition: background 150ms, transform 100ms;
+  white-space: nowrap;
+}
+.newSnackBtn:hover {
+  background: rgba(159,122,234,0.22);
+  transform: translateY(-1px);
+}
+
+/* ── Snack hint text ── */
+.snackHint {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Snack grid (2-column) ── */
+.snackGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px 40px;
+}
+
+.snackEmpty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  font-size: 0.88rem;
+}
+
 /* --- Sidebar Layout --- */
 .sidebarWrapper {
   display: flex;

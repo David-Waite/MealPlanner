@@ -59,16 +59,130 @@
   justify-content: center;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+  min-width: 0;
+}
+
 .cardTitle {
-  font-size: 0.9rem; /* Slightly larger */
+  font-size: 0.9rem;
   font-weight: 700;
-  color: #2d3748; /* Dark grey/blue for sharpness */
+  color: #2d3748;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 4px;
+  flex: 1;
+  min-width: 0;
   line-height: 1.2;
+  margin-bottom: 0;
 }
+
+/* ── Portions pill ── */
+.portionsArea {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.portionsPill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #6b46c1;
+  background: rgba(159, 122, 234, 0.1);
+  border: 1px solid rgba(159, 122, 234, 0.3);
+  border-radius: 99px;
+  padding: 1px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 120ms ease;
+  line-height: 1.6;
+}
+.portionsPill:hover {
+  background: rgba(159, 122, 234, 0.2);
+  border-color: rgba(159, 122, 234, 0.5);
+}
+
+.portionsPopover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+  animation: fadeInUp 120ms ease;
+}
+
+.fractionsRow {
+  display: flex;
+  gap: 4px;
+}
+
+.fractionBtn {
+  flex: 1;
+  padding: 5px 2px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #4a5568;
+  background: #f7fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 120ms ease;
+  text-align: center;
+  white-space: nowrap;
+}
+.fractionBtn:hover { background: #edf2f7; border-color: #9f7aea; color: #6b46c1; }
+.fractionBtnActive {
+  background: #faf5ff;
+  border-color: #9f7aea;
+  color: #6b46c1;
+}
+
+.portionsInputRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.portionsInput {
+  width: 60px;
+  padding: 5px 8px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #2d3748;
+  outline: none;
+  text-align: center;
+}
+.portionsInput:focus { border-color: #9f7aea; }
+
+.portionsLabel {
+  font-size: 0.78rem;
+  color: #718096;
+  flex: 1;
+}
+
+.portionsSaveBtn {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: none;
+  background: #9f7aea;
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.portionsSaveBtn:hover { background: #805ad5; }
 
 /* ---- User Picker Area ---- */
 .userPickerArea {

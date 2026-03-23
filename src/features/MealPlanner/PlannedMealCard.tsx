@@ -3,6 +3,7 @@ import type { PlannedMeal } from "../../types";
 import { useAppState, useAppDispatch } from "../../context/hooks";
 import { useAuth } from "../../context/AuthContext";
 import { savePlanEntryToCloud, deletePlanEntryFromCloud } from "../../lib/cloudSync";
+import { FRACTIONS, formatQty } from "./fractions";
 import styles from "./PlannedMealCard.module.css";
 
 interface PlannedMealCardProps {
@@ -19,22 +20,50 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
+  // Portions edit popover
+  const [isPortionsOpen, setIsPortionsOpen] = useState(false);
+  const [editPortions, setEditPortions] = useState(String(plannedMeal.portions ?? 1));
+  const portionsRef = useRef<HTMLDivElement>(null);
+
   const mealDetails = meals.find((m) => m.id === plannedMeal.mealId);
   const assignedUsers = users.filter((u) =>
     plannedMeal.assignedUsers.includes(u.id)
   );
 
-  // Close picker on outside click
+  // Close popovers on outside click
   useEffect(() => {
-    if (!isPickerOpen) return;
+    if (!isPickerOpen && !isPortionsOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (isPickerOpen && pickerRef.current && !pickerRef.current.contains(target)) {
         setIsPickerOpen(false);
+      }
+      if (isPortionsOpen && portionsRef.current && !portionsRef.current.contains(target)) {
+        setIsPortionsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isPickerOpen]);
+  }, [isPickerOpen, isPortionsOpen]);
+
+  const saveUpdate = (updated: PlannedMeal) => {
+    dispatch({ type: "UPDATE_PLANNED_MEAL", payload: updated });
+    if (user) savePlanEntryToCloud(user.uid, updated).catch(console.error);
+  };
+
+  const handlePortionsSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const p = parseFloat(editPortions);
+    if (!p || p <= 0) return;
+    saveUpdate({ ...plannedMeal, portions: p });
+    setIsPortionsOpen(false);
+  };
+
+  const openPortions = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditPortions(String(plannedMeal.portions ?? 1));
+    setIsPortionsOpen(true);
+  };
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -67,11 +96,7 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({
       ? plannedMeal.assignedUsers.filter((id) => id !== userId)
       : [...plannedMeal.assignedUsers, userId];
 
-    const updated: PlannedMeal = { ...plannedMeal, assignedUsers: newAssignedUsers };
-    dispatch({ type: "UPDATE_PLANNED_MEAL", payload: updated });
-    if (user) {
-      savePlanEntryToCloud(user.uid, updated).catch(console.error);
-    }
+    saveUpdate({ ...plannedMeal, assignedUsers: newAssignedUsers });
   };
 
   if (!mealDetails) {
@@ -91,7 +116,43 @@ export const PlannedMealCard: React.FC<PlannedMealCardProps> = ({
         className={styles.cardImage}
       />
       <div className={styles.cardContent}>
-        <h4 className={styles.cardTitle}>{mealDetails.name}</h4>
+        <div className={styles.titleRow}>
+          <h4 className={styles.cardTitle}>{mealDetails.name}</h4>
+          {/* Portions pill */}
+          <div className={styles.portionsArea} ref={portionsRef}>
+            <button className={styles.portionsPill} onClick={openPortions} title="Edit portions">
+              {formatQty(plannedMeal.portions ?? 1)}×
+            </button>
+            {isPortionsOpen && (
+              <div className={styles.portionsPopover} onClick={(e) => e.stopPropagation()}>
+                <div className={styles.fractionsRow}>
+                  {FRACTIONS.map((f) => (
+                    <button
+                      key={f.label}
+                      className={`${styles.fractionBtn} ${parseFloat(editPortions) === f.value ? styles.fractionBtnActive : ""}`}
+                      onClick={(e) => { e.stopPropagation(); setEditPortions(String(f.value)); }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.portionsInputRow}>
+                  <input
+                    className={styles.portionsInput}
+                    type="number"
+                    min="0.1"
+                    step="0.25"
+                    value={editPortions}
+                    onChange={(e) => setEditPortions(e.target.value)}
+                    autoFocus
+                  />
+                  <span className={styles.portionsLabel}>portions</span>
+                  <button className={styles.portionsSaveBtn} onClick={handlePortionsSave}>✓</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* User avatars + picker trigger */}
         <div className={styles.userPickerArea} ref={pickerRef}>

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
-import type { Meal } from "../../types";
+import React, { useState, useEffect, useMemo } from "react";
+import type { Meal, Ingredient } from "../../types";
 import { useAppState, useAppDispatch } from "../../context/hooks";
 import { useAuth } from "../../context/AuthContext";
 import { MealCard } from "./MealCard";
+import { SnackCard } from "./SnackCard";
+import { SnackFormModal } from "./SnackFormModal";
 import { Button } from "../../components/Button/Button";
 import { MealFormModal } from "./MealFormModal";
 import {
@@ -11,140 +13,124 @@ import {
   bookmarkRecipe,
   firestoreRecipeToMeal,
   deleteRecipeFromCloud,
+  loadGlobalSnacks,
+  bookmarkSnack,
 } from "../../lib/cloudSync";
-import type { FirestoreRecipe } from "../../lib/firestoreTypes";
+import type { FirestoreRecipe, GlobalIngredient } from "../../lib/firestoreTypes";
 import styles from "./MealLibrary.module.css";
 
-type SidebarTab = "yours" | "discover";
-
+type SidebarMode = "meals" | "snacks";
+type MealsTab = "yours" | "discover";
+type SnacksTab = "global" | "mine";
 type DiscoverMeal = FirestoreRecipe & { ownerDisplayName: string };
 
 export const MealLibrarySidebar: React.FC = () => {
-  const { meals } = useAppState();
+  const { meals, ingredients } = useAppState();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
 
-  // --- Modal State ---
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // ── Top-level mode ──
+  const [mode, setMode] = useState<SidebarMode>("meals");
+
+  // ── Meals mode state ──
+  const [isMealModalOpen, setIsMealModalOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
-
-  // --- Tab ---
-  const [activeTab, setActiveTab] = useState<SidebarTab>("yours");
-
-  // --- Search & Filter State ---
-  const [searchQuery, setSearchQuery] = useState("");
+  const [mealsTab, setMealsTab] = useState<MealsTab>("yours");
+  const [mealSearch, setMealSearch] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-
-  // --- "Your Recipes" = owned meals + friends' shared meals ---
   const [friendMeals, setFriendMeals] = useState<Array<Meal & { ownerDisplayName: string }>>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [friendsLoaded, setFriendsLoaded] = useState(false);
-
-  // --- Discover tab state ---
   const [discoverMeals, setDiscoverMeals] = useState<DiscoverMeal[]>([]);
   const [discoverLoading, setDiscoverLoading] = useState(false);
   const [discoverLoaded, setDiscoverLoaded] = useState(false);
-  const [bookmarking, setBookmarking] = useState<string | null>(null); // recipeId being bookmarked
+  const [bookmarking, setBookmarking] = useState<string | null>(null);
 
-  const handleOpenNewMealModal = () => {
-    setEditingMeal(null);
-    setIsModalOpen(true);
-  };
+  // ── Snacks mode state ──
+  const [snacksTab, setSnacksTab] = useState<SnacksTab>("global");
+  const [isSnackModalOpen, setIsSnackModalOpen] = useState(false);
+  const [editingSnack, setEditingSnack] = useState<Ingredient | null>(null);
+  const [snackSearch, setSnackSearch] = useState("");
+  const [globalSnacks, setGlobalSnacks] = useState<GlobalIngredient[]>([]);
+  const [globalSnacksLoading, setGlobalSnacksLoading] = useState(false);
+  const [globalSnacksLoaded, setGlobalSnacksLoaded] = useState(false);
+  const [bookmarkingSnack, setBookmarkingSnack] = useState<string | null>(null);
 
-  const handleOpenEditModal = (meal: Meal) => {
-    setEditingMeal(meal);
-    setIsModalOpen(true);
-  };
+  // ── Snack modal handlers ──
+  const handleOpenNewSnack = () => { setEditingSnack(null); setIsSnackModalOpen(true); };
+  const handleOpenEditSnack = (ing: Ingredient) => { setEditingSnack(ing); setIsSnackModalOpen(true); };
+  const handleCloseSnackModal = () => { setIsSnackModalOpen(false); setEditingSnack(null); };
+
+  // ── Meals modal handlers ──
+  const handleOpenNewMeal = () => { setEditingMeal(null); setIsMealModalOpen(true); };
+  const handleOpenEditMeal = (meal: Meal) => { setEditingMeal(meal); setIsMealModalOpen(true); };
+  const handleCloseMealModal = () => { setIsMealModalOpen(false); setEditingMeal(null); };
 
   const handleDeleteMeal = (mealId: string) => {
     if (window.confirm("Are you sure you want to delete this meal?")) {
       dispatch({ type: "DELETE_MEAL", payload: { mealId } });
-      if (user) {
-        deleteRecipeFromCloud(user.uid, mealId).catch(console.error);
-      }
+      if (user) deleteRecipeFromCloud(user.uid, mealId).catch(console.error);
     }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingMeal(null);
-  };
-
-  // Load friends' shared recipes (lazy, once per user session)
+  // ── Load friends' recipes ──
   useEffect(() => {
-    if (activeTab !== "yours" || !user || friendsLoaded) return;
-    console.log("[MealLibrarySidebar] Loading friends recipes for uid:", user.uid);
+    if (mode !== "meals" || mealsTab !== "yours" || !user || friendsLoaded) return;
     setFriendsLoading(true);
     loadFriendsRecipes(user.uid)
       .then((recipes) => {
-        console.log("[MealLibrarySidebar] Friends recipes loaded:", recipes.length);
-        setFriendMeals(
-          recipes.map((r) => ({
-            ...firestoreRecipeToMeal(r),
-            ownerDisplayName: r.ownerDisplayName,
-          }))
-        );
+        setFriendMeals(recipes.map((r) => ({ ...firestoreRecipeToMeal(r), ownerDisplayName: r.ownerDisplayName })));
         setFriendsLoaded(true);
       })
-      .catch((err) => {
-        console.error("[MealLibrarySidebar] loadFriendsRecipes error:", err);
-        console.error("[MealLibrarySidebar] Error code:", (err as any)?.code, "| message:", (err as any)?.message);
-      })
+      .catch(console.error)
       .finally(() => setFriendsLoading(false));
-  }, [activeTab, user, friendsLoaded]);
+  }, [mode, mealsTab, user, friendsLoaded]);
 
-  // Load global/discover recipes (lazy, once per session)
+  // ── Load global/discover recipes ──
   useEffect(() => {
-    if (activeTab !== "discover" || discoverLoaded) return;
+    if (mode !== "meals" || mealsTab !== "discover" || discoverLoaded) return;
     setDiscoverLoading(true);
     loadGlobalRecipes()
-      .then((recipes) => {
-        setDiscoverMeals(recipes);
-        setDiscoverLoaded(true);
-      })
+      .then((recipes) => { setDiscoverMeals(recipes); setDiscoverLoaded(true); })
       .catch(console.error)
       .finally(() => setDiscoverLoading(false));
-  }, [activeTab, discoverLoaded]);
+  }, [mode, mealsTab, discoverLoaded]);
 
-  // Reset caches when user changes
+  // ── Reset caches on user change ──
   useEffect(() => {
-    setFriendsLoaded(false);
-    setFriendMeals([]);
-    setDiscoverLoaded(false);
-    setDiscoverMeals([]);
+    setFriendsLoaded(false); setFriendMeals([]);
+    setDiscoverLoaded(false); setDiscoverMeals([]);
   }, [user?.uid]);
 
-  // --- Tag filters (Your Recipes tab only) ---
-  const allTags = Array.from(
-    new Set(meals.flatMap((meal) => meal.tags || []))
-  ).sort();
+  // ── Load global snacks on demand ──
+  useEffect(() => {
+    if (mode !== "snacks" || snacksTab !== "global" || globalSnacksLoaded) return;
+    setGlobalSnacksLoading(true);
+    loadGlobalSnacks()
+      .then((snacks) => { setGlobalSnacks(snacks); setGlobalSnacksLoaded(true); })
+      .catch(console.error)
+      .finally(() => setGlobalSnacksLoading(false));
+  }, [mode, snacksTab, globalSnacksLoaded]);
 
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
+  // ── Meals filtering ──
+  const allTags = useMemo(
+    () => Array.from(new Set(meals.flatMap((m) => m.tags || []))).sort(),
+    [meals]
+  );
+  const toggleTag = (tag: string) =>
+    setSelectedTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
 
-  // Owned meals (with search + tag filter)
-  const filteredOwnedMeals = meals.filter((meal) => {
-    const matchesSearch = meal.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTags =
-      selectedTags.length === 0 ||
-      selectedTags.every((tag) => meal.tags?.includes(tag));
+  const filteredOwnedMeals = meals.filter((m) => {
+    const matchesSearch = m.name.toLowerCase().includes(mealSearch.toLowerCase());
+    const matchesTags = selectedTags.length === 0 || selectedTags.every((t) => m.tags?.includes(t));
     return matchesSearch && matchesTags;
   });
-
-  // Friends' shared meals (search only — no tag filter)
-  const filteredFriendMeals = friendMeals.filter((meal) =>
-    meal.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFriendMeals = friendMeals.filter((m) =>
+    m.name.toLowerCase().includes(mealSearch.toLowerCase())
   );
-
-  // Discover meals (search only)
-  const filteredDiscoverMeals = discoverMeals.filter((meal) =>
-    meal.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredDiscover = discoverMeals.filter((m) =>
+    m.name.toLowerCase().includes(mealSearch.toLowerCase())
   );
-
-  // IDs already bookmarked (to disable bookmark button)
   const bookmarkedIds = new Set(meals.map((m) => m.bookmarkedFromId).filter(Boolean));
 
   const handleBookmark = async (recipe: DiscoverMeal) => {
@@ -153,101 +139,186 @@ export const MealLibrarySidebar: React.FC = () => {
     try {
       const copy = await bookmarkRecipe(recipe, user.uid);
       dispatch({ type: "ADD_MEAL", payload: firestoreRecipeToMeal(copy) });
-    } catch (err) {
-      console.error(err);
-      alert("Failed to bookmark recipe. Please try again.");
-    } finally {
-      setBookmarking(null);
-    }
+    } catch { alert("Failed to bookmark recipe."); }
+    finally { setBookmarking(null); }
+  };
+
+  // ── Snack filtering ──
+  const mySnacks = useMemo(
+    () => ingredients.filter((i) => i.isSnack && i.source === "local"),
+    [ingredients]
+  );
+  const bookmarkedSnackIds = useMemo(
+    () => new Set(mySnacks.map((s) => s.bookmarkedFromId).filter(Boolean)),
+    [mySnacks]
+  );
+
+  const filteredMySnacks = useMemo(() => {
+    const q = snackSearch.trim().toLowerCase();
+    if (!q) return mySnacks;
+    return mySnacks.filter((i) => i.name.toLowerCase().includes(q));
+  }, [mySnacks, snackSearch]);
+
+  const filteredGlobalSnacks = useMemo(() => {
+    const q = snackSearch.trim().toLowerCase();
+    if (!q) return globalSnacks;
+    return globalSnacks.filter((i) => i.name.toLowerCase().includes(q));
+  }, [globalSnacks, snackSearch]);
+
+  const handleBookmarkSnack = async (snack: GlobalIngredient) => {
+    if (!user) return;
+    setBookmarkingSnack(snack.id);
+    try {
+      const bookmarked = await bookmarkSnack(user.uid, snack);
+      dispatch({
+        type: "ADD_INGREDIENT",
+        payload: { ...bookmarked, source: "local" as const },
+      });
+    } catch { alert("Failed to bookmark snack."); }
+    finally { setBookmarkingSnack(null); }
   };
 
   return (
     <>
       <div className={styles.sidebarWrapper}>
+
+        {/* ── Fixed header ── */}
         <div className={styles.sidebarHeader}>
-          <div className={styles.headerTop}>
-            <h2 className={styles.sidebarTitle}>Meals</h2>
-            {activeTab === "yours" && (
-              <Button onClick={handleOpenNewMealModal} className={styles.newMealBtn}>
-                + New Meal
-              </Button>
-            )}
-          </div>
 
-          {/* Tab switcher */}
-          <div className={styles.tabRow}>
+          {/* Mode toggle */}
+          <div className={styles.modeToggle}>
             <button
-              className={`${styles.tabBtn} ${activeTab === "yours" ? styles.tabBtnActive : ""}`}
-              onClick={() => setActiveTab("yours")}
+              className={`${styles.modeBtn} ${mode === "meals" ? styles.modeBtnActive : ""}`}
+              onClick={() => setMode("meals")}
             >
-              Your Recipes
+              Meals
             </button>
             <button
-              className={`${styles.tabBtn} ${activeTab === "discover" ? styles.tabBtnActive : ""}`}
-              onClick={() => setActiveTab("discover")}
+              className={`${styles.modeBtn} ${mode === "snacks" ? styles.modeBtnActive : ""}`}
+              onClick={() => setMode("snacks")}
             >
-              Discover
+              Snacks
             </button>
           </div>
 
-          <div className={styles.searchContainer}>
-            <input
-              type="text"
-              placeholder={activeTab === "yours" ? "Search your recipes…" : "Search global recipes…"}
-              className={styles.searchInput}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+          {/* ── MEALS header controls ── */}
+          {mode === "meals" && (
+            <>
+              <div className={styles.headerTop}>
+                <h2 className={styles.sidebarTitle}>Meals</h2>
+                <Button onClick={handleOpenNewMeal} className={styles.newMealBtn}>
+                  + New Meal
+                </Button>
+              </div>
 
-          {activeTab === "yours" && allTags.length > 0 && (
-            <div className={styles.tagFilters}>
-              {allTags.map((tag) => (
+              <div className={styles.tabRow}>
                 <button
-                  key={tag}
-                  className={`${styles.tagFilter} ${
-                    selectedTags.includes(tag) ? styles.tagFilterActive : ""
-                  }`}
-                  onClick={() => toggleTag(tag)}
+                  className={`${styles.tabBtn} ${mealsTab === "yours" ? styles.tabBtnActive : ""}`}
+                  onClick={() => setMealsTab("yours")}
                 >
-                  {tag}
+                  Your Recipes
                 </button>
-              ))}
-              {selectedTags.length > 0 && (
                 <button
-                  className={styles.clearTagsBtn}
-                  onClick={() => setSelectedTags([])}
+                  className={`${styles.tabBtn} ${mealsTab === "discover" ? styles.tabBtnActive : ""}`}
+                  onClick={() => setMealsTab("discover")}
                 >
-                  Clear
+                  Discover
                 </button>
+              </div>
+
+              <div className={styles.searchContainer}>
+                <input
+                  type="text"
+                  placeholder={mealsTab === "yours" ? "Search your recipes…" : "Search global recipes…"}
+                  className={styles.searchInput}
+                  value={mealSearch}
+                  onChange={(e) => setMealSearch(e.target.value)}
+                />
+              </div>
+
+              {mealsTab === "yours" && allTags.length > 0 && (
+                <div className={styles.tagFilters}>
+                  {allTags.map((tag) => (
+                    <button
+                      key={tag}
+                      className={`${styles.tagFilter} ${selectedTags.includes(tag) ? styles.tagFilterActive : ""}`}
+                      onClick={() => toggleTag(tag)}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                  {selectedTags.length > 0 && (
+                    <button className={styles.clearTagsBtn} onClick={() => setSelectedTags([])}>
+                      Clear
+                    </button>
+                  )}
+                </div>
               )}
-            </div>
+            </>
+          )}
+
+          {/* ── SNACKS header controls ── */}
+          {mode === "snacks" && (
+            <>
+              <div className={styles.headerTop}>
+                <h2 className={styles.sidebarTitle}>Snacks</h2>
+                {snacksTab === "mine" && (
+                  <button className={styles.newSnackBtn} onClick={handleOpenNewSnack}>
+                    + New Snack
+                  </button>
+                )}
+              </div>
+
+              <div className={styles.tabRow}>
+                <button
+                  className={`${styles.tabBtn} ${snacksTab === "global" ? styles.tabBtnActive : ""}`}
+                  onClick={() => setSnacksTab("global")}
+                >
+                  Global
+                </button>
+                <button
+                  className={`${styles.tabBtn} ${snacksTab === "mine" ? styles.tabBtnActive : ""}`}
+                  onClick={() => setSnacksTab("mine")}
+                >
+                  My Snacks
+                </button>
+              </div>
+
+              <div className={styles.searchContainer}>
+                <input
+                  type="text"
+                  placeholder={snacksTab === "global" ? "Search global snacks…" : "Search my snacks…"}
+                  className={styles.searchInput}
+                  value={snackSearch}
+                  onChange={(e) => setSnackSearch(e.target.value)}
+                />
+              </div>
+            </>
           )}
         </div>
 
+        {/* ── Scrollable content ── */}
         <div className={styles.scrollableArea}>
-          {/* Your Recipes tab: owned + friends' shared */}
-          {activeTab === "yours" && (
+
+          {/* MEALS content */}
+          {mode === "meals" && mealsTab === "yours" && (
             <div className={styles.cardList}>
               {filteredOwnedMeals.map((meal) => (
                 <MealCard
                   key={meal.id}
                   meal={meal}
-                  onEdit={() => handleOpenEditModal(meal)}
+                  onEdit={() => handleOpenEditMeal(meal)}
                   onDelete={() => handleDeleteMeal(meal.id)}
                 />
               ))}
-
-              {/* Friends' shared meals */}
               {user && !friendsLoading && filteredFriendMeals.map((meal) => (
                 <MealCard
                   key={meal.id}
                   meal={meal}
-                  onEdit={() => handleOpenEditModal(meal)}
+                  onEdit={() => handleOpenEditMeal(meal)}
                   onDelete={() => handleDeleteMeal(meal.id)}
                 />
               ))}
-
               {filteredOwnedMeals.length === 0 && filteredFriendMeals.length === 0 && (
                 <div className={styles.noResults}>
                   {meals.length === 0 ? "No meals yet — create one!" : "No meals found."}
@@ -256,36 +327,25 @@ export const MealLibrarySidebar: React.FC = () => {
             </div>
           )}
 
-          {/* Discover tab: approved global recipes */}
-          {activeTab === "discover" && (
+          {mode === "meals" && mealsTab === "discover" && (
             <div className={styles.cardList}>
-              {discoverLoading && (
-                <div className={styles.noResults}>Loading…</div>
-              )}
-              {!discoverLoading && discoverLoaded && filteredDiscoverMeals.length === 0 && (
+              {discoverLoading && <div className={styles.noResults}>Loading…</div>}
+              {!discoverLoading && discoverLoaded && filteredDiscover.length === 0 && (
                 <div className={styles.noResults}>
-                  {discoverMeals.length === 0
-                    ? "No global recipes yet."
-                    : "No recipes match your search."}
+                  {discoverMeals.length === 0 ? "No global recipes yet." : "No recipes match your search."}
                 </div>
               )}
-              {filteredDiscoverMeals.map((recipe) => {
+              {filteredDiscover.map((recipe) => {
                 const alreadyBookmarked = bookmarkedIds.has(recipe.id);
                 return (
                   <div key={recipe.id} className={styles.discoverCard}>
                     {recipe.photoUrl && (
-                      <img
-                        src={recipe.photoUrl}
-                        alt={recipe.name}
-                        className={styles.discoverCardImage}
-                      />
+                      <img src={recipe.photoUrl} alt={recipe.name} className={styles.discoverCardImage} />
                     )}
                     <div className={styles.discoverCardContent}>
                       <span className={styles.discoverCardName}>{recipe.name}</span>
-                      <span className={styles.discoverCardAttribution}>
-                        by {recipe.ownerDisplayName}
-                      </span>
-                      {recipe.tags && recipe.tags.length > 0 && (
+                      <span className={styles.discoverCardAttribution}>by {recipe.ownerDisplayName}</span>
+                      {recipe.tags?.length > 0 && (
                         <div className={styles.cardTags}>
                           {recipe.tags.map((tag) => (
                             <span key={tag} className={styles.cardTag}>{tag}</span>
@@ -300,11 +360,7 @@ export const MealLibrarySidebar: React.FC = () => {
                           disabled={alreadyBookmarked || bookmarking === recipe.id}
                           onClick={() => handleBookmark(recipe)}
                         >
-                          {alreadyBookmarked
-                            ? "Bookmarked"
-                            : bookmarking === recipe.id
-                            ? "Saving…"
-                            : "Bookmark"}
+                          {alreadyBookmarked ? "Bookmarked" : bookmarking === recipe.id ? "Saving…" : "Bookmark"}
                         </button>
                       </div>
                     )}
@@ -313,14 +369,69 @@ export const MealLibrarySidebar: React.FC = () => {
               })}
             </div>
           )}
+
+          {/* SNACKS content — Global tab */}
+          {mode === "snacks" && snacksTab === "global" && (
+            <div className={styles.snackGrid}>
+              {globalSnacksLoading && (
+                <div className={styles.snackEmpty}>Loading…</div>
+              )}
+              {!globalSnacksLoading && filteredGlobalSnacks.length === 0 && (
+                <div className={styles.snackEmpty}>
+                  {globalSnacksLoaded && globalSnacks.length === 0
+                    ? "No global snacks yet."
+                    : "No snacks match your search."}
+                </div>
+              )}
+              {filteredGlobalSnacks.map((snack) => {
+                const isBookmarked = bookmarkedSnackIds.has(snack.id);
+                return (
+                  <SnackCard
+                    key={snack.id}
+                    ingredient={{ ...snack, source: "global" as const }}
+                    onBookmark={user ? () => handleBookmarkSnack(snack) : undefined}
+                    isBookmarking={bookmarkingSnack === snack.id}
+                    isBookmarked={isBookmarked}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* SNACKS content — My Snacks tab */}
+          {mode === "snacks" && snacksTab === "mine" && (
+            <div className={styles.snackGrid}>
+              {filteredMySnacks.length === 0 && (
+                <div className={styles.snackEmpty}>
+                  {mySnacks.length === 0
+                    ? "No snacks yet — bookmark from Global or add a new one."
+                    : "No snacks match your search."}
+                </div>
+              )}
+              {filteredMySnacks.map((ing) => (
+                <SnackCard
+                  key={ing.id}
+                  ingredient={ing}
+                  onEdit={() => handleOpenEditSnack(ing)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       <MealFormModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        isOpen={isMealModalOpen}
+        onClose={handleCloseMealModal}
         initialData={editingMeal}
       />
+
+      {isSnackModalOpen && (
+        <SnackFormModal
+          initialData={editingSnack}
+          onClose={handleCloseSnackModal}
+        />
+      )}
     </>
   );
 };

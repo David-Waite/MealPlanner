@@ -497,6 +497,7 @@ export const initialState: AppState = {
   ],
 
   plan: [],
+  snacks: [],
 
   selectedUserIds: ["u1"],
   selectedDates: [],

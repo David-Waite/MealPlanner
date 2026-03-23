@@ -51,6 +51,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
               meals: merged.meals,
               customUnits: merged.customUnits,
               plan: merged.plan,
+              snacks: merged.snacks,
               ingredients: merged.ingredients,
               ...(merged.users ? { users: merged.users } : {}),
             },

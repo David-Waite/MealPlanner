@@ -4,6 +4,15 @@
   padding: 40px 24px;
 }
 
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-secondary, #4a5568);
+  margin: 28px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
 .title {
   font-size: 1.5rem;
   font-weight: 800;
@@ -32,6 +41,10 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.updateCard {
+  border-left: 3px solid #38bdf8;
 }
 
 .recipePhoto {

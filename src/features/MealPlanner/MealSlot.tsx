@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useAppState, useAppDispatch } from "../../context/hooks";
 import { useAuth } from "../../context/AuthContext";
-import { savePlanEntryToCloud } from "../../lib/cloudSync";
+import { savePlanEntryToCloud, saveSnackToCloud } from "../../lib/cloudSync";
 import { PlannedMealCard } from "./PlannedMealCard";
+import { PlannedSnackCard } from "./PlannedSnackCard";
+import type { UnitRef } from "../../types";
 import styles from "./MealPlannerGrid.module.css";
 
 interface MealSlotProps {
@@ -11,48 +13,66 @@ interface MealSlotProps {
 }
 
 export const MealSlot: React.FC<MealSlotProps> = ({ date, mealType }) => {
-  const { plan, selectedUserIds } = useAppState();
+  const { plan, snacks, ingredients, customUnits, selectedUserIds } = useAppState();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
   const [isHovering, setIsHovering] = useState(false);
 
-  // Filter the plan to find meals for this slot
-  const mealsInSlot = plan.filter(
-    (p) => p.date === date && p.mealType === mealType
-  );
-
-  // --- Drag & Drop Handlers ---
+  const mealsInSlot = plan.filter((p) => p.date === date && p.mealType === mealType);
+  const snacksInSlot = snacks.filter((s) => s.date === date && s.mealType === mealType);
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // This is VITAL to allow dropping
+    e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
     setIsHovering(true);
   };
 
-  const handleDragLeave = () => {
-    setIsHovering(false);
-  };
+  const handleDragLeave = () => setIsHovering(false);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsHovering(false);
+    const data = e.dataTransfer.getData("text/plain");
 
-    // Get the mealId from the drag event
-    const mealId = e.dataTransfer.getData("text/plain");
+    if (data.startsWith("snack:")) {
+      // ── Snack drop ──
+      const ingredientId = data.slice(6);
+      const ingredient = ingredients.find((i) => i.id === ingredientId);
+      if (!ingredient) return;
 
-    if (mealId) {
-      const newPlannedMeal = {
+      // Default unit: first custom unit for this ingredient, or "unit"
+      const ingCustomUnits = (ingredient.customUnits ?? []).length > 0
+        ? ingredient.customUnits!
+        : customUnits.filter((cu) => cu.ingredientId === ingredientId);
+
+      const defaultUnit: UnitRef = ingCustomUnits.length > 0
+        ? { type: "custom", customUnitId: ingCustomUnits[0].id }
+        : { type: "core", unit: "unit" };
+
+      const newSnack = {
         instanceId: crypto.randomUUID(),
-        mealId: mealId,
-        date: date,
-        mealType: mealType,
+        ingredientId,
+        quantity: 1,
+        unit: defaultUnit,
+        date,
+        mealType,
         assignedUsers: selectedUserIds,
       };
 
+      dispatch({ type: "ADD_PLANNED_SNACK", payload: newSnack });
+      if (user) saveSnackToCloud(user.uid, newSnack).catch(console.error);
+
+    } else if (data) {
+      // ── Meal drop ──
+      const newPlannedMeal = {
+        instanceId: crypto.randomUUID(),
+        mealId: data,
+        date,
+        mealType,
+        assignedUsers: selectedUserIds,
+      };
       dispatch({ type: "ADD_PLANNED_MEAL", payload: newPlannedMeal });
-      if (user) {
-        savePlanEntryToCloud(user.uid, newPlannedMeal).catch(console.error);
-      }
+      if (user) savePlanEntryToCloud(user.uid, newPlannedMeal).catch(console.error);
     }
   };
 
@@ -65,12 +85,14 @@ export const MealSlot: React.FC<MealSlotProps> = ({ date, mealType }) => {
     >
       <div className={styles.slotContent}>
         {mealsInSlot.map((plannedMeal) => (
-          <PlannedMealCard
-            key={plannedMeal.instanceId}
-            plannedMeal={plannedMeal}
-          />
+          <PlannedMealCard key={plannedMeal.instanceId} plannedMeal={plannedMeal} />
         ))}
-        {mealsInSlot.length === 0 && <div className={styles.emptySlot}></div>}
+        {snacksInSlot.map((plannedSnack) => (
+          <PlannedSnackCard key={plannedSnack.instanceId} plannedSnack={plannedSnack} />
+        ))}
+        {mealsInSlot.length === 0 && snacksInSlot.length === 0 && (
+          <div className={styles.emptySlot}></div>
+        )}
       </div>
     </div>
   );

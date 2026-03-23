@@ -56,6 +56,11 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // Snacks subcollection
+      match /snacks/{snackId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // Local ingredients — user-created, not yet promoted to global
       match /localIngredients/{ingredientId} {
         allow read, write: if isOwner(userId);
@@ -71,6 +76,13 @@ service cloud.firestore {
     match /{path=**}/recipes/{recipeId} {
       allow read: if isSignedIn()
         && resource.data.get("sharedWith", []).hasAny([request.auth.uid]);
+      allow read: if isAdmin();
+    }
+
+    // ── Collection-group query: localIngredients across all users ─────────────
+    // Required for the admin pending-snack-review query.
+
+    match /{path=**}/localIngredients/{ingredientId} {
       allow read: if isAdmin();
     }
 

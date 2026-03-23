@@ -54,7 +54,12 @@ export interface Ingredient {
   name: string;
   category: IngredientCategory;
   perishable: boolean;
-  customUnits?: CustomUnit[];   // present when loaded from Firestore ingredient docs
+  isSnack?: boolean;
+  photoUrl?: string;
+  source?: "global" | "local";       // set at load time — not persisted
+  bookmarkedFromId?: string;         // set when bookmarking a global snack
+  globalStatus?: GlobalStatus;       // review status for user-submitted snacks
+  customUnits?: CustomUnit[];
 }
 
 export interface RecipeIngredient {
@@ -63,7 +68,7 @@ export interface RecipeIngredient {
   unit: UnitRef;
 }
 
-export type GlobalStatus = "none" | "pending" | "approved" | "rejected";
+export type GlobalStatus = "none" | "pending" | "approved" | "rejected" | "pending_update";
 export type RecipeVisibility = "private" | "friends" | "global";
 
 export interface Meal {
@@ -105,6 +110,17 @@ export interface PlannedMeal {
   date: string;
   mealType: string;
   assignedUsers: string[];
+  portions?: number; // how many portions planned; default 1
+}
+
+export interface PlannedSnack {
+  instanceId: string;
+  ingredientId: string;
+  quantity: number;
+  unit: UnitRef;
+  date: string;
+  mealType: string;
+  assignedUsers: string[];
 }
 
 // --- Shopping List Settings ---
@@ -123,6 +139,7 @@ export interface AppState {
   customUnits: CustomUnit[];
 
   plan: PlannedMeal[];
+  snacks: PlannedSnack[];
 
   selectedUserIds: string[];
   selectedDates: string[];

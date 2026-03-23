@@ -1,6 +1,6 @@
 import { Timestamp, QueryDocumentSnapshot } from "firebase/firestore";
 import type { FirestoreDataConverter, SnapshotOptions, DocumentData } from "firebase/firestore";
-import type { RecipeIngredient, CustomUnit, UnitRef, IngredientCategory } from "../types";
+import type { RecipeIngredient, CustomUnit, UnitRef, IngredientCategory, GlobalStatus } from "../types";
 
 // ---------------------------------------------------------------------------
 // User document  (users/{userId})
@@ -46,6 +46,7 @@ export interface FirestorePlannedMeal {
   date: string;
   mealType: string;
   assignedUsers: string[];
+  portions: number;
 }
 
 export const plannedMealConverter: FirestoreDataConverter<FirestorePlannedMeal> = {
@@ -64,6 +65,7 @@ export const plannedMealConverter: FirestoreDataConverter<FirestorePlannedMeal> 
       date: data.date,
       mealType: data.mealType,
       assignedUsers: data.assignedUsers ?? [],
+      portions: data.portions ?? 1,
     };
   },
 };
@@ -244,6 +246,10 @@ export interface GlobalIngredient {
   name: string;
   category: IngredientCategory;
   perishable: boolean;
+  isSnack: boolean;
+  photoUrl: string | null;
+  bookmarkedFromId: string | null;
+  globalStatus: GlobalStatus;
   customUnits: CustomUnit[];
 }
 
@@ -262,7 +268,47 @@ export const globalIngredientConverter: FirestoreDataConverter<GlobalIngredient>
       name: data.name,
       category: data.category,
       perishable: data.perishable ?? false,
+      isSnack: data.isSnack ?? false,
+      photoUrl: data.photoUrl ?? null,
+      bookmarkedFromId: data.bookmarkedFromId ?? null,
+      globalStatus: data.globalStatus ?? "none",
       customUnits: data.customUnits ?? [],
+    };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// PlannedSnack document  (users/{userId}/snacks/{instanceId})
+// ---------------------------------------------------------------------------
+
+export interface FirestorePlannedSnack {
+  instanceId: string;
+  ingredientId: string;
+  quantity: number;
+  unit: import("../types").UnitRef;
+  date: string;
+  mealType: string;
+  assignedUsers: string[];
+}
+
+export const plannedSnackConverter: FirestoreDataConverter<FirestorePlannedSnack> = {
+  toFirestore(snack: FirestorePlannedSnack): DocumentData {
+    const { instanceId, ...data } = snack;
+    return data;
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot,
+    options: SnapshotOptions
+  ): FirestorePlannedSnack {
+    const data = snapshot.data(options);
+    return {
+      instanceId: snapshot.id,
+      ingredientId: data.ingredientId,
+      quantity: data.quantity,
+      unit: data.unit,
+      date: data.date,
+      mealType: data.mealType,
+      assignedUsers: data.assignedUsers ?? [],
     };
   },
 };

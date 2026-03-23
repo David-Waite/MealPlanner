@@ -20,7 +20,7 @@ import {
 } from "../../types";
 import { useAppState, useAppDispatch } from "../../context/hooks";
 import { useAuth } from "../../context/AuthContext";
-import { submitGlobalRecipe, saveRecipeToCloud } from "../../lib/cloudSync";
+import { submitGlobalRecipe, saveRecipeToCloud, suggestRecipeUpdate } from "../../lib/cloudSync";
 import { IngredientCombobox } from "./IngredientCombobox";
 import { Button } from "../../components/Button/Button";
 import { Input } from "../../components/Form/Input";
@@ -80,6 +80,7 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
   const [mobileStep, setMobileStep] = useState<MobileStepIndex>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingGlobal, setIsSubmittingGlobal] = useState(false);
+  const [isSuggestingUpdate, setIsSuggestingUpdate] = useState(false);
   const [globalErrors, setGlobalErrors] = useState<string[]>([]);
 
   // Custom unit
@@ -257,6 +258,37 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
       onClose();
     } catch (err) { console.error(err); alert("Failed to submit globally."); }
     finally { setIsSubmittingGlobal(false); }
+  };
+
+  const handleSuggestGlobalUpdate = async () => {
+    if (!initialData || !user) return;
+    const errors: string[] = [];
+    if (!name.trim()) errors.push("Recipe name is required.");
+    if (!photoPreview && !photoUrl) errors.push("A photo is required.");
+    if (!description.trim()) errors.push("A description is required.");
+    if (!instructions.filter((s) => s.trim()).length) errors.push("At least one instruction step is required.");
+    if (!selectedTags.length) errors.push("At least one tag is required.");
+    if (!formIngredients.length) errors.push("At least one ingredient is required.");
+    if (errors.length) { setGlobalErrors(errors); return; }
+    setGlobalErrors([]);
+    setIsSuggestingUpdate(true);
+    try {
+      const recipeId = initialData.id;
+      const finalPhotoUrl = photoFile ? await uploadPhoto(user.uid, recipeId) : photoUrl;
+      const updatedMeal: Meal = {
+        ...initialData,
+        name: name.trim(), servings, photoUrl: finalPhotoUrl,
+        description: description.trim() || undefined,
+        instructions: instructions.filter((s) => s.trim()),
+        tags: selectedTags, sharedWith,
+        globalStatus: "pending_update",
+        localUpdatedAt: Date.now(),
+      };
+      dispatch({ type: "UPDATE_MEAL", payload: updatedMeal });
+      await suggestRecipeUpdate(user.uid, updatedMeal, customUnits);
+      onClose();
+    } catch (err) { console.error(err); alert("Failed to suggest update."); }
+    finally { setIsSuggestingUpdate(false); }
   };
 
   // ── Shared content renderers ───────────────────────────────────────────────
@@ -437,7 +469,10 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
           {initialData.globalStatus && initialData.globalStatus !== "none" && (
             <div className={styles.statusRow}>
               <span className={`${styles.badge} ${styles[`badge_${initialData.globalStatus}`]}`}>
-                {initialData.globalStatus === "approved" ? "Approved — live globally" : initialData.globalStatus === "pending" ? "Pending review" : "Rejected"}
+                {initialData.globalStatus === "approved" ? "✓ Approved — live globally"
+                  : initialData.globalStatus === "pending" ? "⏳ Pending review"
+                  : initialData.globalStatus === "pending_update" ? "⏳ Update pending review"
+                  : "Rejected"}
               </span>
               {initialData.globalStatus === "rejected" && initialData.rejectionReason && (
                 <span className={styles.rejectionNote}>Reason: {initialData.rejectionReason}</span>
@@ -445,11 +480,23 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
             </div>
           )}
           {globalErrors.length > 0 && <ul className={styles.globalErrors}>{globalErrors.map((e, i) => <li key={i}>{e}</li>)}</ul>}
-          <p className={styles.globalHint}>Submit to be featured in the community Discover tab. It will be reviewed before going live.</p>
+          {/* Initial submission */}
           {(!initialData.globalStatus || initialData.globalStatus === "none" || initialData.globalStatus === "rejected") && (
-            <Button variant="primary" onClick={handleSubmitGlobally} disabled={isSubmittingGlobal}>
-              {isSubmittingGlobal ? "Submitting…" : "Submit for Review"}
-            </Button>
+            <>
+              <p className={styles.globalHint}>Submit to be featured in the community Discover tab. It will be reviewed before going live.</p>
+              <Button variant="primary" onClick={handleSubmitGlobally} disabled={isSubmittingGlobal}>
+                {isSubmittingGlobal ? "Submitting…" : "Submit for Review"}
+              </Button>
+            </>
+          )}
+          {/* Suggest update on approved recipes */}
+          {initialData.globalStatus === "approved" && (
+            <>
+              <p className={styles.globalHint}>Save your changes locally, or suggest them as an update to the global version for admin review.</p>
+              <Button variant="primary" onClick={handleSuggestGlobalUpdate} disabled={isSuggestingUpdate}>
+                {isSuggestingUpdate ? "Submitting…" : "Suggest Global Update"}
+              </Button>
+            </>
           )}
         </div>
       )}

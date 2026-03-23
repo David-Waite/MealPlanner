@@ -18,6 +18,7 @@ import { db } from "./firebase";
 import {
   recipeConverter,
   plannedMealConverter,
+  plannedSnackConverter,
   friendshipConverter,
   userConverter,
   globalIngredientConverter,
@@ -28,7 +29,7 @@ import type {
   FirestoreShoppingList,
   FirestoreUser,
 } from "./firestoreTypes";
-import type { AppState, Meal, PlannedMeal, CustomUnit, ShoppingListSettings, User, Ingredient } from "../types";
+import type { AppState, Meal, PlannedMeal, PlannedSnack, CustomUnit, ShoppingListSettings, User, Ingredient } from "../types";
 
 // localStorage key — value is the uid that was last synced on this device.
 export const CLOUD_SYNCED_KEY = "mealplanner_cloud_synced";
@@ -158,7 +159,7 @@ export async function syncFromCloud(
   uid: string,
   localMeals: Meal[],
   localCustomUnits: CustomUnit[]
-): Promise<{ meals: Meal[]; customUnits: CustomUnit[]; plan: PlannedMeal[]; users: User[] | null; ingredients: Ingredient[] }> {
+): Promise<{ meals: Meal[]; customUnits: CustomUnit[]; plan: PlannedMeal[]; snacks: PlannedSnack[]; users: User[] | null; ingredients: Ingredient[] }> {
   console.log("[syncFromCloud] Starting for uid:", uid, "| localMeals:", localMeals.length, "| localCustomUnits:", localCustomUnits.length);
   // Read recipes from subcollection
   const recipesRef = collection(db, "users", uid, "recipes").withConverter(recipeConverter);
@@ -237,6 +238,22 @@ export async function syncFromCloud(
     };
   });
 
+  // Read snacks from subcollection — cloud overwrites local
+  const snacksRef = collection(db, "users", uid, "snacks").withConverter(plannedSnackConverter);
+  const snacksSnap = await getDocs(query(snacksRef));
+  const snacks: PlannedSnack[] = snacksSnap.docs.map((d) => {
+    const s = d.data();
+    return {
+      instanceId: s.instanceId,
+      ingredientId: s.ingredientId,
+      quantity: s.quantity,
+      unit: s.unit,
+      date: s.date,
+      mealType: s.mealType,
+      assignedUsers: s.assignedUsers,
+    };
+  });
+
   // Read user document to get household users array
   const userDocRef = doc(db, "users", uid);
   const userDocSnap = await getDoc(userDocRef);
@@ -257,10 +274,10 @@ export async function syncFromCloud(
     ),
   ]);
 
-  // Global ingredients first, local ingredients override/extend (same-ID wins for local)
+  // Global ingredients first, local overrides (local wins on same ID)
   const ingredientMap = new Map<string, Ingredient>();
-  globalIngSnap.docs.forEach((d) => ingredientMap.set(d.id, d.data()));
-  localIngSnap.docs.forEach((d) => ingredientMap.set(d.id, d.data()));
+  globalIngSnap.docs.forEach((d) => ingredientMap.set(d.id, { ...d.data(), source: "global" as const }));
+  localIngSnap.docs.forEach((d) => ingredientMap.set(d.id, { ...d.data(), source: "local" as const }));
 
   const ingredients = Array.from(ingredientMap.values());
 
@@ -278,6 +295,7 @@ export async function syncFromCloud(
     meals: mergedMeals,
     customUnits: Array.from(customUnitMap.values()),
     plan,
+    snacks,
     users: cloudUsers,
     ingredients,
   };
@@ -506,6 +524,36 @@ export async function rejectRecipe(
 }
 
 // ---------------------------------------------------------------------------
+// rejectRecipeUpdate
+// Admin only. Rejects a suggested edit — resets status back to "approved"
+// so the global version is unchanged.
+// ---------------------------------------------------------------------------
+
+export async function rejectRecipeUpdate(
+  recipeId: string,
+  ownerId: string
+): Promise<void> {
+  await updateDoc(doc(db, "users", ownerId, "recipes", recipeId), {
+    globalStatus: "approved",
+    updatedAt: Timestamp.now(),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// suggestRecipeUpdate
+// User requests that their local edits be applied to the global version.
+// Saves the local changes and sets globalStatus → "pending_update".
+// ---------------------------------------------------------------------------
+
+export async function suggestRecipeUpdate(
+  uid: string,
+  meal: import("../types").Meal,
+  customUnits: import("../types").CustomUnit[]
+): Promise<void> {
+  await saveRecipeToCloud(uid, { ...meal, globalStatus: "pending_update" }, customUnits);
+}
+
+// ---------------------------------------------------------------------------
 // bookmarkRecipe
 // Copies a global recipe into the current user's recipes subcollection.
 // ---------------------------------------------------------------------------
@@ -641,6 +689,7 @@ export async function savePlanEntryToCloud(
     date: plannedMeal.date,
     mealType: plannedMeal.mealType,
     assignedUsers: plannedMeal.assignedUsers,
+    portions: plannedMeal.portions ?? 1,
   });
 }
 
@@ -651,10 +700,185 @@ export async function deletePlanEntryFromCloud(
   await deleteDoc(doc(db, "users", uid, "plan", instanceId));
 }
 
+export async function saveLocalIngredient(
+  uid: string,
+  ingredient: import("./firestoreTypes").GlobalIngredient
+): Promise<void> {
+  const ref = doc(
+    collection(db, "users", uid, "localIngredients").withConverter(globalIngredientConverter),
+    ingredient.id
+  );
+  await setDoc(ref, ingredient);
+}
+
+export async function updateLocalIngredient(
+  uid: string,
+  ingredient: import("./firestoreTypes").GlobalIngredient
+): Promise<void> {
+  const ref = doc(
+    collection(db, "users", uid, "localIngredients").withConverter(globalIngredientConverter),
+    ingredient.id
+  );
+  await setDoc(ref, ingredient);
+}
+
+// ---------------------------------------------------------------------------
+// loadGlobalSnacks
+// Returns globalIngredients where isSnack === true.
+// ---------------------------------------------------------------------------
+
+export async function loadGlobalSnacks(): Promise<import("./firestoreTypes").GlobalIngredient[]> {
+  const snap = await getDocs(
+    query(
+      collection(db, "globalIngredients").withConverter(globalIngredientConverter),
+      where("isSnack", "==", true)
+    )
+  );
+  return snap.docs
+    .map((d) => d.data())
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ---------------------------------------------------------------------------
+// bookmarkSnack
+// Copies a global snack into the user's localIngredients.
+// ---------------------------------------------------------------------------
+
+export async function bookmarkSnack(
+  uid: string,
+  snack: import("./firestoreTypes").GlobalIngredient
+): Promise<import("./firestoreTypes").GlobalIngredient> {
+  const bookmarked: import("./firestoreTypes").GlobalIngredient = {
+    ...snack,
+    bookmarkedFromId: snack.id,
+    globalStatus: "none",
+  };
+  const ref = doc(
+    collection(db, "users", uid, "localIngredients").withConverter(globalIngredientConverter),
+    snack.id
+  );
+  await setDoc(ref, bookmarked);
+  return bookmarked;
+}
+
+// ---------------------------------------------------------------------------
+// submitSnackForReview
+// Sets globalStatus → "pending" on a user's local ingredient.
+// ---------------------------------------------------------------------------
+
+export async function submitSnackForReview(
+  uid: string,
+  ingredientId: string
+): Promise<void> {
+  await updateDoc(doc(db, "users", uid, "localIngredients", ingredientId), {
+    globalStatus: "pending",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// approveSnack
+// Admin only. Marks the user's localIngredient as "approved" and copies it
+// to the top-level globalIngredients collection so all users can see it.
+// ---------------------------------------------------------------------------
+
+export async function approveSnack(
+  ingredientId: string,
+  ownerId: string
+): Promise<void> {
+  const localRef = doc(
+    collection(db, "users", ownerId, "localIngredients").withConverter(globalIngredientConverter),
+    ingredientId
+  );
+  const snap = await getDoc(localRef);
+  if (!snap.exists()) throw new Error("Ingredient not found.");
+
+  const data = snap.data();
+  const now = Timestamp.now();
+
+  // Copy to globalIngredients
+  await setDoc(
+    doc(collection(db, "globalIngredients").withConverter(globalIngredientConverter), ingredientId),
+    { ...data, globalStatus: "approved" as const }
+  );
+
+  // Update the user's local copy
+  await updateDoc(doc(db, "users", ownerId, "localIngredients", ingredientId), {
+    globalStatus: "approved",
+    updatedAt: now,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// rejectSnack
+// Admin only. Marks the user's localIngredient as "rejected".
+// ---------------------------------------------------------------------------
+
+export async function rejectSnack(
+  ingredientId: string,
+  ownerId: string
+): Promise<void> {
+  await updateDoc(doc(db, "users", ownerId, "localIngredients", ingredientId), {
+    globalStatus: "rejected",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// rejectSnackUpdate
+// Admin only. Rejects a suggested snack edit — resets back to "approved".
+// ---------------------------------------------------------------------------
+
+export async function rejectSnackUpdate(
+  ingredientId: string,
+  ownerId: string
+): Promise<void> {
+  await updateDoc(doc(db, "users", ownerId, "localIngredients", ingredientId), {
+    globalStatus: "approved",
+  });
+}
+
+// ---------------------------------------------------------------------------
+// suggestSnackUpdate
+// User requests their local edits be applied to the global version.
+// Saves local changes and sets globalStatus → "pending_update".
+// ---------------------------------------------------------------------------
+
+export async function suggestSnackUpdate(
+  uid: string,
+  ingredient: import("./firestoreTypes").GlobalIngredient
+): Promise<void> {
+  const ref = doc(
+    collection(db, "users", uid, "localIngredients").withConverter(globalIngredientConverter),
+    ingredient.id
+  );
+  await setDoc(ref, { ...ingredient, globalStatus: "pending_update" as const });
+}
+
 export async function saveHouseholdUsers(
   uid: string,
   users: User[]
 ): Promise<void> {
   const userRef = doc(db, "users", uid);
   await updateDoc(userRef, { users });
+}
+
+export async function saveSnackToCloud(
+  uid: string,
+  snack: PlannedSnack
+): Promise<void> {
+  const ref = doc(db, "users", uid, "snacks", snack.instanceId);
+  await setDoc(ref, {
+    ingredientId: snack.ingredientId,
+    quantity: snack.quantity,
+    unit: snack.unit,
+    date: snack.date,
+    mealType: snack.mealType,
+    assignedUsers: snack.assignedUsers,
+  });
+}
+
+export async function deleteSnackFromCloud(
+  uid: string,
+  instanceId: string
+): Promise<void> {
+  await deleteDoc(doc(db, "users", uid, "snacks", instanceId));
 }

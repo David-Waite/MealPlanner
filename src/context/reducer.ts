@@ -47,6 +47,26 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         ),
       };
 
+    // --- PlannedSnack Actions ---
+    case "ADD_PLANNED_SNACK":
+      return { ...state, snacks: [...state.snacks, action.payload] };
+
+    case "REMOVE_PLANNED_SNACK":
+      return {
+        ...state,
+        snacks: state.snacks.filter(
+          (s) => s.instanceId !== action.payload.instanceId
+        ),
+      };
+
+    case "UPDATE_PLANNED_SNACK":
+      return {
+        ...state,
+        snacks: state.snacks.map((s) =>
+          s.instanceId === action.payload.instanceId ? action.payload : s
+        ),
+      };
+
     // --- User Management ---
     case "ADD_USER":
       return { ...state, users: [...state.users, action.payload] };
@@ -59,6 +79,10 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         plan: state.plan.map((p) => ({
           ...p,
           assignedUsers: p.assignedUsers.filter((id) => id !== action.payload.userId),
+        })),
+        snacks: state.snacks.map((s) => ({
+          ...s,
+          assignedUsers: s.assignedUsers.filter((id) => id !== action.payload.userId),
         })),
       };
 
@@ -77,6 +101,14 @@ export const appReducer = (state: AppState, action: Action): AppState => {
       return {
         ...state,
         ingredients: [...state.ingredients, action.payload],
+      };
+
+    case "UPDATE_INGREDIENT":
+      return {
+        ...state,
+        ingredients: state.ingredients.map((i) =>
+          i.id === action.payload.id ? action.payload : i
+        ),
       };
 
     // --- Custom Unit Actions ---
@@ -115,6 +147,7 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         meals: action.payload.meals,
         customUnits: action.payload.customUnits,
         plan: action.payload.plan,
+        ...(action.payload.snacks !== undefined ? { snacks: action.payload.snacks } : {}),
         ...(action.payload.users ? { users: action.payload.users } : {}),
         ...(action.payload.ingredients ? { ingredients: action.payload.ingredients } : {}),
       };
