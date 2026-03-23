@@ -1,4 +1,177 @@
 .userSelector {
   display: flex;
+  align-items: center;
   gap: var(--spacing-2);
+}
+
+/* Wrapper for each avatar so we can show the delete button */
+.avatarWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.deleteUserBtn {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e53e3e;
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  padding: 0;
+}
+
+.avatarWrapper:hover .deleteUserBtn {
+  opacity: 1;
+}
+
+/* "+" circle to open the form */
+.addWrapper {
+  position: relative;
+}
+
+.addUserCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px dashed #cbd5e0;
+  color: #a0aec0;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.addUserCircle:hover {
+  border-color: #667eea;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.06);
+}
+
+/* Dropdown form panel */
+.addForm {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.06);
+  z-index: 200;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeDown 140ms ease;
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.addFormTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0;
+}
+
+.nameInput {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  color: #2d3748;
+  outline: none;
+  transition: border-color 150ms ease;
+  box-sizing: border-box;
+}
+
+.nameInput:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* Initials preview bubble */
+.initialsPreview {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  align-self: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Colour palette */
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.paletteColor {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.paletteColor:hover {
+  transform: scale(1.15);
+}
+
+.paletteColorActive {
+  border-color: #2d3748;
+  transform: scale(1.15);
+}
+
+/* Add button */
+.addBtn {
+  background: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.addBtn:hover:not(:disabled) {
+  background: #5a67d8;
+}
+
+.addBtn:disabled {
+  background: #e2e8f0;
+  color: #a0aec0;
+  cursor: not-allowed;
 }

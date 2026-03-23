@@ -1,6 +1,6 @@
 import { Timestamp, QueryDocumentSnapshot } from "firebase/firestore";
 import type { FirestoreDataConverter, SnapshotOptions, DocumentData } from "firebase/firestore";
-import type { RecipeIngredient, CustomUnit, UnitRef } from "../types";
+import type { RecipeIngredient, CustomUnit, UnitRef, IngredientCategory } from "../types";
 
 // ---------------------------------------------------------------------------
 // User document  (users/{userId})
@@ -233,3 +233,36 @@ export const friendshipConverter: FirestoreDataConverter<FirestoreFriendship> =
       };
     },
   };
+
+// ---------------------------------------------------------------------------
+// GlobalIngredient document  (globalIngredients/{ingredientId})
+// Also used for localIngredients/{ingredientId} — same shape.
+// ---------------------------------------------------------------------------
+
+export interface GlobalIngredient {
+  id: string;
+  name: string;
+  category: IngredientCategory;
+  perishable: boolean;
+  customUnits: CustomUnit[];
+}
+
+export const globalIngredientConverter: FirestoreDataConverter<GlobalIngredient> = {
+  toFirestore(ingredient: GlobalIngredient): DocumentData {
+    const { id, ...data } = ingredient;
+    return data;
+  },
+  fromFirestore(
+    snapshot: QueryDocumentSnapshot,
+    options: SnapshotOptions
+  ): GlobalIngredient {
+    const data = snapshot.data(options);
+    return {
+      id: snapshot.id,
+      name: data.name,
+      category: data.category,
+      perishable: data.perishable ?? false,
+      customUnits: data.customUnits ?? [],
+    };
+  },
+};

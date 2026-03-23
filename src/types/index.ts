@@ -54,6 +54,7 @@ export interface Ingredient {
   name: string;
   category: IngredientCategory;
   perishable: boolean;
+  customUnits?: CustomUnit[];   // present when loaded from Firestore ingredient docs
 }
 
 export interface RecipeIngredient {

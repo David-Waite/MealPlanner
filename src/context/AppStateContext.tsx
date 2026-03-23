@@ -45,7 +45,16 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
             stateRef.current.customUnits
           );
           console.log("[AppStateContext] syncFromCloud succeeded. meals:", merged.meals.length, "plan:", merged.plan.length, "customUnits:", merged.customUnits.length);
-          dispatch({ type: "MERGE_CLOUD_DATA", payload: merged });
+          dispatch({
+            type: "MERGE_CLOUD_DATA",
+            payload: {
+              meals: merged.meals,
+              customUnits: merged.customUnits,
+              plan: merged.plan,
+              ingredients: merged.ingredients,
+              ...(merged.users ? { users: merged.users } : {}),
+            },
+          });
         } catch (err) {
           console.error("[AppStateContext] Cloud sync failed:", err);
         }

@@ -70,9 +70,17 @@
   line-height: 1.2;
 }
 
+/* ---- User Picker Area ---- */
+.userPickerArea {
+  position: relative;
+}
+
 .userAvatars {
   display: flex;
-  margin-top: 0;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  margin-top: 2px;
 }
 
 .miniAvatar {
@@ -90,7 +98,81 @@
 
 /* Overlap mini avatars */
 .miniAvatar:not(:first-child) {
-  margin-left: -8px; /* Tighter overlap */
+  margin-left: -6px;
+}
+
+/* "+" / "+ Add" trigger button */
+.addUserBtn {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #a0aec0;
+  background: #f7fafc;
+  border: 1.5px dashed #cbd5e0;
+  border-radius: 20px;
+  padding: 1px 5px;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: all 120ms ease;
+  white-space: nowrap;
+  margin-left: 2px;
+}
+
+.userAvatars:hover .addUserBtn {
+  color: #4a5568;
+  border-color: #a0aec0;
+  background: #edf2f7;
+}
+
+/* Popover picker */
+.userPicker {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 6px 8px;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.12),
+    0 1px 4px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  animation: fadeInUp 120ms ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Each user option in the picker */
+.pickerUser {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: transparent;
+  color: #718096;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+  opacity: 0.45;
+}
+
+.pickerUser:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.pickerUserActive {
+  color: #ffffff;
+  opacity: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .removeButton {

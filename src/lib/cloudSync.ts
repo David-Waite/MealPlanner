@@ -12,6 +12,7 @@ import {
   Timestamp,
   updateDoc,
   limit,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import {
@@ -19,6 +20,7 @@ import {
   plannedMealConverter,
   friendshipConverter,
   userConverter,
+  globalIngredientConverter,
 } from "./firestoreTypes";
 import type {
   FirestoreRecipe,
@@ -26,7 +28,7 @@ import type {
   FirestoreShoppingList,
   FirestoreUser,
 } from "./firestoreTypes";
-import type { AppState, Meal, PlannedMeal, CustomUnit, ShoppingListSettings } from "../types";
+import type { AppState, Meal, PlannedMeal, CustomUnit, ShoppingListSettings, User, Ingredient } from "../types";
 
 // localStorage key — value is the uid that was last synced on this device.
 export const CLOUD_SYNCED_KEY = "mealplanner_cloud_synced";
@@ -104,7 +106,7 @@ export async function migrateLocalToCloud(
     userRef,
     {
       customUnits: state.customUnits,
-      selectedUserIds: state.selectedUserIds,
+      users: state.users,
       shoppingListSettings: state.shoppingListSettings,
       updatedAt: Timestamp.now(),
     },
@@ -156,7 +158,7 @@ export async function syncFromCloud(
   uid: string,
   localMeals: Meal[],
   localCustomUnits: CustomUnit[]
-): Promise<{ meals: Meal[]; customUnits: CustomUnit[]; plan: PlannedMeal[] }> {
+): Promise<{ meals: Meal[]; customUnits: CustomUnit[]; plan: PlannedMeal[]; users: User[] | null; ingredients: Ingredient[] }> {
   console.log("[syncFromCloud] Starting for uid:", uid, "| localMeals:", localMeals.length, "| localCustomUnits:", localCustomUnits.length);
   // Read recipes from subcollection
   const recipesRef = collection(db, "users", uid, "recipes").withConverter(recipeConverter);
@@ -235,12 +237,49 @@ export async function syncFromCloud(
     };
   });
 
+  // Read user document to get household users array
+  const userDocRef = doc(db, "users", uid);
+  const userDocSnap = await getDoc(userDocRef);
+  const cloudUsers: User[] | null = userDocSnap.exists()
+    ? (userDocSnap.data().users ?? null)
+    : null;
+
+  // Load ingredients: global catalogue + user's local (unreviewed) ingredients
+  const [globalIngSnap, localIngSnap] = await Promise.all([
+    getDocs(
+      query(
+        collection(db, "globalIngredients").withConverter(globalIngredientConverter),
+        orderBy("name")
+      )
+    ),
+    getDocs(
+      collection(db, "users", uid, "localIngredients").withConverter(globalIngredientConverter)
+    ),
+  ]);
+
+  // Global ingredients first, local ingredients override/extend (same-ID wins for local)
+  const ingredientMap = new Map<string, Ingredient>();
+  globalIngSnap.docs.forEach((d) => ingredientMap.set(d.id, d.data()));
+  localIngSnap.docs.forEach((d) => ingredientMap.set(d.id, d.data()));
+
+  const ingredients = Array.from(ingredientMap.values());
+
+  // Fold ingredient customUnits into the flat customUnits map
+  // (this replaces the old approach of embedding them on recipe docs)
+  ingredients.forEach((ing) => {
+    (ing.customUnits ?? []).forEach((cu) => {
+      if (!customUnitMap.has(cu.id)) customUnitMap.set(cu.id, cu);
+    });
+  });
+
   localStorage.setItem(CLOUD_SYNCED_KEY, uid);
 
   return {
     meals: mergedMeals,
     customUnits: Array.from(customUnitMap.values()),
     plan,
+    users: cloudUsers,
+    ingredients,
   };
 }
 
@@ -610,4 +649,12 @@ export async function deletePlanEntryFromCloud(
   instanceId: string
 ): Promise<void> {
   await deleteDoc(doc(db, "users", uid, "plan", instanceId));
+}
+
+export async function saveHouseholdUsers(
+  uid: string,
+  users: User[]
+): Promise<void> {
+  const userRef = doc(db, "users", uid);
+  await updateDoc(userRef, { users });
 }

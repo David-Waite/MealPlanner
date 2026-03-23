@@ -39,6 +39,29 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         ),
       };
 
+    case "UPDATE_PLANNED_MEAL":
+      return {
+        ...state,
+        plan: state.plan.map((p) =>
+          p.instanceId === action.payload.instanceId ? action.payload : p
+        ),
+      };
+
+    // --- User Management ---
+    case "ADD_USER":
+      return { ...state, users: [...state.users, action.payload] };
+
+    case "DELETE_USER":
+      return {
+        ...state,
+        users: state.users.filter((u) => u.id !== action.payload.userId),
+        selectedUserIds: state.selectedUserIds.filter((id) => id !== action.payload.userId),
+        plan: state.plan.map((p) => ({
+          ...p,
+          assignedUsers: p.assignedUsers.filter((id) => id !== action.payload.userId),
+        })),
+      };
+
     // --- UI Actions ---
     case "SET_SELECTED_USERS":
       return { ...state, selectedUserIds: action.payload };
@@ -92,6 +115,8 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         meals: action.payload.meals,
         customUnits: action.payload.customUnits,
         plan: action.payload.plan,
+        ...(action.payload.users ? { users: action.payload.users } : {}),
+        ...(action.payload.ingredients ? { ingredients: action.payload.ingredients } : {}),
       };
 
     default:
