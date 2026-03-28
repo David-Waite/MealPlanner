@@ -94,7 +94,6 @@ function buildChipEl(
 function extractContent(
   el: HTMLDivElement,
   allIngredients: Ingredient[],
-  customUnits: CustomUnit[],
 ): { text: string; stepIngredients: InlineStepIngredient[] } {
   let text = "";
   const ings: InlineStepIngredient[] = [];
@@ -282,9 +281,9 @@ const StepRichEditor = forwardRef<StepEditorHandle, Props>(function StepRichEdit
   const syncContent = useCallback(() => {
     const el = editorRef.current;
     if (!el) return;
-    const { text: t, stepIngredients: sis } = extractContent(el, allIngredients, customUnits);
+    const { text: t, stepIngredients: sis } = extractContent(el, allIngredients);
     onChangeRef.current(t, sis);
-  }, [allIngredients, customUnits]);
+  }, [allIngredients]);
 
   // ── Expose insertIngredient handle ────────────────────────────────────────
 

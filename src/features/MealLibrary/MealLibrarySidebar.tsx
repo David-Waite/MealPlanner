@@ -33,7 +33,7 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
 };
 
 export const MealLibrarySidebar: React.FC = () => {
-  const { meals, ingredients, favourites } = useAppState();
+  const { meals, favourites } = useAppState();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
 
@@ -317,7 +317,7 @@ export const MealLibrarySidebar: React.FC = () => {
     if (!user) return;
     try {
       const bookmarked = await bookmarkSnack(user.uid, snack);
-      dispatch({ type: "ADD_INGREDIENT", payload: { ...bookmarked, source: "local" as const } });
+      dispatch({ type: "ADD_INGREDIENT", payload: { ...bookmarked, source: "local" as const, photoUrl: bookmarked.photoUrl ?? undefined, bookmarkedFromId: bookmarked.bookmarkedFromId ?? undefined } });
     } catch { alert("Failed to bookmark snack."); }
   };
 

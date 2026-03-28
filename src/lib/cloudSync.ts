@@ -285,8 +285,8 @@ export async function syncFromCloud(
 
   // Global ingredients first, local overrides (local wins on same ID)
   const ingredientMap = new Map<string, Ingredient>();
-  globalIngSnap.docs.forEach((d) => ingredientMap.set(d.id, { ...d.data(), source: "global" as const }));
-  localIngSnap.docs.forEach((d) => ingredientMap.set(d.id, { ...d.data(), source: "local" as const }));
+  globalIngSnap.docs.forEach((d) => { const x = d.data(); ingredientMap.set(d.id, { ...x, source: "global" as const, photoUrl: x.photoUrl ?? undefined, bookmarkedFromId: x.bookmarkedFromId ?? undefined }); });
+  localIngSnap.docs.forEach((d) => { const x = d.data(); ingredientMap.set(d.id, { ...x, source: "local" as const, photoUrl: x.photoUrl ?? undefined, bookmarkedFromId: x.bookmarkedFromId ?? undefined }); });
 
   const ingredients = Array.from(ingredientMap.values());
 

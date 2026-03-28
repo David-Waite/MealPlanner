@@ -63,9 +63,6 @@ export const AdminPage: React.FC = () => {
         where("isSnack", "==", true)
       )),
     ]).then(async ([newRecipeSnap, updateRecipeSnap, newSnackSnap, updateSnackSnap]) => {
-      const toOwnedSnack = (d: ReturnType<typeof updateSnackSnap.docs[0]["data"]> & object, snap: typeof updateSnackSnap) =>
-        snap.docs.map((doc) => ({ ...doc.data(), ownerId: doc.ref.parent.parent!.id }));
-
       const newRecipes = newRecipeSnap.docs.map((d) => d.data());
       const updateRecipes = updateRecipeSnap.docs.map((d) => d.data());
       const newSnacks = newSnackSnap.docs.map((d) => ({ ...d.data(), ownerId: d.ref.parent.parent!.id }));

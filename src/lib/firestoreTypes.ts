@@ -76,7 +76,7 @@ export const plannedMealConverter: FirestoreDataConverter<FirestorePlannedMeal> 
 // ---------------------------------------------------------------------------
 
 export type RecipeVisibility = "private" | "friends" | "global";
-export type RecipeGlobalStatus = "none" | "pending" | "approved" | "rejected";
+export type RecipeGlobalStatus = "none" | "pending" | "approved" | "rejected" | "pending_update";
 
 export interface FirestoreRecipe {
   id: string;

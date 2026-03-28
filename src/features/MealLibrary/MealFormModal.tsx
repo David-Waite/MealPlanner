@@ -307,12 +307,13 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
     if (!name.trim()) errors.push("Recipe name is required.");
     if (!photoPreview && !photoUrl) errors.push("A photo is required.");
     if (!description.trim()) errors.push("A description is required.");
-    if (!instructions.filter((s) => s.trim()).length) errors.push("At least one instruction step is required.");
+    if (!steps.filter((s) => s.text.trim()).length) errors.push("At least one instruction step is required.");
     if (!selectedTags.length) errors.push("At least one tag is required.");
     if (!formIngredients.length) errors.push("At least one ingredient is required.");
     if (errors.length) { setGlobalErrors(errors); return; }
     setGlobalErrors([]);
-    dispatch({ type: "UPDATE_MEAL", payload: { ...initialData, name, servings, photoUrl, description: description.trim(), instructions: instructions.filter((s) => s.trim()), tags: selectedTags, sharedWith, globalStatus: "pending", visibility: "global" } });
+    const stepTexts = steps.map(s => s.text).filter(s => s.trim());
+    dispatch({ type: "UPDATE_MEAL", payload: { ...initialData, name, servings, photoUrl, description: description.trim(), instructions: stepTexts, steps: steps.filter(s => s.text.trim()), tags: selectedTags, sharedWith, globalStatus: "pending", visibility: "global" } });
     try {
       setIsSubmittingGlobal(true);
       await submitGlobalRecipe(initialData.id, user.uid);
@@ -327,7 +328,7 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
     if (!name.trim()) errors.push("Recipe name is required.");
     if (!photoPreview && !photoUrl) errors.push("A photo is required.");
     if (!description.trim()) errors.push("A description is required.");
-    if (!instructions.filter((s) => s.trim()).length) errors.push("At least one instruction step is required.");
+    if (!steps.filter((s) => s.text.trim()).length) errors.push("At least one instruction step is required.");
     if (!selectedTags.length) errors.push("At least one tag is required.");
     if (!formIngredients.length) errors.push("At least one ingredient is required.");
     if (errors.length) { setGlobalErrors(errors); return; }
@@ -340,7 +341,8 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
         ...initialData,
         name: name.trim(), servings, photoUrl: finalPhotoUrl,
         description: description.trim() || undefined,
-        instructions: instructions.filter((s) => s.trim()),
+        instructions: steps.map(s => s.text).filter(s => s.trim()),
+        steps: steps.filter(s => s.text.trim()),
         tags: selectedTags, sharedWith,
         globalStatus: "pending_update",
         localUpdatedAt: Date.now(),
@@ -495,7 +497,7 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
               {recipeIngredients.map(ing => {
                 const remaining = remainingMap[ing.ingredientId!] ?? ing.quantity;
                 const ingName = allIngredients.find(i => i.id === ing.ingredientId)?.name ?? ing.ingredientId!;
-                const unitLabel = ing.unit.type === "core" ? ing.unit.unit : customUnits.find(cu => cu.id === ing.unit.customUnitId)?.label ?? "unit";
+                const unitLabel = ing.unit.type === "core" ? ing.unit.unit : customUnits.find(cu => cu.id === (ing.unit as { type: "custom"; customUnitId: string }).customUnitId)?.label ?? "unit";
                 const status = remaining < -0.001 ? "over" : remaining < 0.001 ? "done" : "partial";
                 return (
                   <button

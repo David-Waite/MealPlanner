@@ -25,7 +25,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
 
   const formatUnit = (ing: RecipeIngredient): string => {
     if (ing.unit.type === "core") return ing.unit.unit;
-    const cu = customUnits.find((u) => u.id === ing.unit.customUnitId);
+    const cu = customUnits.find((u) => u.id === (ing.unit as { type: "custom"; customUnitId: string }).customUnitId);
     return cu ? cu.label : "unit";
   };
 
@@ -114,7 +114,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
                         <div className={styles.stepIngredientList}>
                           {step.stepIngredients.map((si, siIdx) => {
                             const ingName = ingredients.find(i => i.id === si.ingredientId)?.name ?? si.ingredientId;
-                            const unitLabel = si.unit.type === "core" ? si.unit.unit : customUnits.find(cu => cu.id === si.unit.customUnitId)?.label ?? "unit";
+                            const unitLabel = si.unit.type === "core" ? si.unit.unit : customUnits.find(cu => cu.id === (si.unit as { type: "custom"; customUnitId: string }).customUnitId)?.label ?? "unit";
                             return (
                               <span key={siIdx} className={styles.stepIngPill}>
                                 {formatQuantity(si.quantity)} {unitLabel} {ingName}
