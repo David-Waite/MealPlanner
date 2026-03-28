@@ -7,6 +7,7 @@ interface MealCardProps {
   meal: Meal;
   onEdit: () => void;
   onDelete: () => void;
+  onView?: () => void;
   isFavourited?: boolean;
   onFavourite?: () => void;
 }
@@ -15,6 +16,7 @@ export const MealCard: React.FC<MealCardProps> = ({
   meal,
   onEdit,
   onDelete,
+  onView,
   isFavourited,
   onFavourite,
 }) => {
@@ -39,7 +41,13 @@ export const MealCard: React.FC<MealCardProps> = ({
   };
 
   return (
-    <div className={styles.mealCard} draggable="true" onDragStart={handleDragStart}>
+    <div
+      className={styles.mealCard}
+      draggable="true"
+      onDragStart={handleDragStart}
+      onClick={onView}
+      style={onView ? { cursor: "grab" } : undefined}
+    >
       <div className={styles.cardActions} onClick={(e) => e.stopPropagation()}>
         {onFavourite && (
           <button

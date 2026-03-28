@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { MealCard } from "./MealCard";
 import { SnackFormModal } from "./SnackFormModal";
 import { MealFormModal } from "./MealFormModal";
+import { RecipeDetailModal } from "./RecipeDetailModal";
 import {
   loadFriendsRecipes,
   loadGlobalRecipes,
@@ -63,6 +64,8 @@ export const MealLibrarySidebar: React.FC = () => {
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [isSnackModalOpen, setIsSnackModalOpen] = useState(false);
   const [editingSnack, setEditingSnack] = useState<Ingredient | null>(null);
+  const [viewingMeal, setViewingMeal] = useState<Meal | null>(null);
+  const [viewingMealCanEdit, setViewingMealCanEdit] = useState(false);
 
   // ── Unified search ──
   const [search, setSearch] = useState("");
@@ -73,6 +76,7 @@ export const MealLibrarySidebar: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showTagFilter, setShowTagFilter] = useState(false);
   const [friendMeals, setFriendMeals] = useState<Array<Meal & { ownerDisplayName: string }>>([]);
+  const [friendMealsRaw, setFriendMealsRaw] = useState<DiscoverMeal[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [friendsLoaded, setFriendsLoaded] = useState(false);
   const [discoverMeals, setDiscoverMeals] = useState<DiscoverMeal[]>([]);
@@ -120,6 +124,7 @@ export const MealLibrarySidebar: React.FC = () => {
     setFriendsLoading(true);
     loadFriendsRecipes(user.uid)
       .then((recipes) => {
+        setFriendMealsRaw(recipes);
         setFriendMeals(recipes.map((r) => ({ ...firestoreRecipeToMeal(r), ownerDisplayName: r.ownerDisplayName })));
         setFriendsLoaded(true);
       })
@@ -151,6 +156,7 @@ export const MealLibrarySidebar: React.FC = () => {
   useEffect(() => {
     setFriendsLoaded(false);
     setFriendMeals([]);
+    setFriendMealsRaw([]);
     setDiscoverLoaded(false);
     setDiscoverMeals([]);
   }, [user?.uid]);
@@ -295,6 +301,18 @@ export const MealLibrarySidebar: React.FC = () => {
     finally { setBookmarking(null); }
   };
 
+  const handleBookmarkFriendMeal = async (mealId: string) => {
+    if (!user) return;
+    const raw = friendMealsRaw.find((r) => r.id === mealId);
+    if (!raw) return;
+    setBookmarking(mealId);
+    try {
+      const copy = await bookmarkRecipe(raw, user.uid);
+      dispatch({ type: "ADD_MEAL", payload: firestoreRecipeToMeal(copy) });
+    } catch { alert("Failed to save recipe."); }
+    finally { setBookmarking(null); }
+  };
+
   const handleBookmarkSnack = async (snack: GlobalIngredient) => {
     if (!user) return;
     try {
@@ -314,8 +332,6 @@ export const MealLibrarySidebar: React.FC = () => {
     e.dataTransfer.effectAllowed = "copy";
   };
 
-  // suppress unused warning — ingredients is available for future use (snack editing)
-  void ingredients;
   void handleBookmarkSnack;
 
   return (
@@ -444,6 +460,7 @@ export const MealLibrarySidebar: React.FC = () => {
                       <div key={meal.id} className={styles.discoverGridCard}>
                         <MealCard
                           meal={meal}
+                          onView={() => { setViewingMeal(meal); setViewingMealCanEdit(false); }}
                           onEdit={() => {}}
                           onDelete={() => {}}
                           isFavourited={isMealFavourited(meal.id)}
@@ -572,16 +589,30 @@ export const MealLibrarySidebar: React.FC = () => {
                         <div key={author} className={styles.friendsGroup}>
                           <p className={styles.friendsGroupLabel}>{author}</p>
                           <div className={`${styles.discoverViewGrid} ${styles.friendsGroupGrid}`}>
-                            {authorMeals.map((meal) => (
-                              <MealCard
-                                key={meal.id}
-                                meal={{ ...meal, ownerDisplayName: undefined }}
-                                onEdit={() => { setEditingMeal(meal); setIsMealModalOpen(true); }}
-                                onDelete={() => handleDeleteMeal(meal.id)}
-                                isFavourited={isMealFavourited(meal.id)}
-                                onFavourite={() => handleToggleFavourite(meal.id, "meal")}
-                              />
-                            ))}
+                            {authorMeals.map((meal) => {
+                              const alreadySaved = bookmarkedMealIds.has(meal.id);
+                              return (
+                                <div key={meal.id} className={styles.discoverGridCard}>
+                                  <MealCard
+                                    meal={{ ...meal, ownerDisplayName: undefined }}
+                                    onView={() => { setViewingMeal(meal); setViewingMealCanEdit(false); }}
+                                    onEdit={() => {}}
+                                    onDelete={() => {}}
+                                    isFavourited={isMealFavourited(meal.id)}
+                                    onFavourite={() => handleToggleFavourite(meal.id, "meal")}
+                                  />
+                                  {user && (
+                                    <button
+                                      className={`${styles.discoverSaveBtn} ${alreadySaved ? styles.discoverSaveBtnSaved : ""}`}
+                                      disabled={alreadySaved || bookmarking === meal.id}
+                                      onClick={() => handleBookmarkFriendMeal(meal.id)}
+                                    >
+                                      {alreadySaved ? "Saved" : bookmarking === meal.id ? "…" : "+ Save"}
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
@@ -608,6 +639,7 @@ export const MealLibrarySidebar: React.FC = () => {
                       <MealCard
                         key={meal.id}
                         meal={meal}
+                        onView={() => { setViewingMeal(meal); setViewingMealCanEdit(true); }}
                         onEdit={() => { setEditingMeal(meal); setIsMealModalOpen(true); }}
                         onDelete={() => handleDeleteMeal(meal.id)}
                         isFavourited={isMealFavourited(meal.id)}
@@ -674,6 +706,7 @@ export const MealLibrarySidebar: React.FC = () => {
                           <MealCard
                             key={meal.id}
                             meal={meal}
+                            onView={() => { setViewingMeal(meal); setViewingMealCanEdit(true); }}
                             onEdit={() => { setEditingMeal(meal); setIsMealModalOpen(true); }}
                             onDelete={() => handleDeleteMeal(meal.id)}
                             isFavourited={true}
@@ -697,6 +730,7 @@ export const MealLibrarySidebar: React.FC = () => {
                             isFavourited={true}
                             onFavourite={() => handleToggleFavourite(snack.id, "snack")}
                             onDragStart={handleDragStartSnack}
+                            onEdit={() => { setEditingSnack(snack as unknown as Ingredient); setIsSnackModalOpen(true); }}
                           />
                         ))}
                       </div>
@@ -761,6 +795,7 @@ export const MealLibrarySidebar: React.FC = () => {
                         <MealCard
                           key={meal.id}
                           meal={meal}
+                          onView={() => { setViewingMeal(meal); setViewingMealCanEdit(true); }}
                           onEdit={() => { setEditingMeal(meal); setIsMealModalOpen(true); }}
                           onDelete={() => handleDeleteMeal(meal.id)}
                           isFavourited={isMealFavourited(meal.id)}
@@ -823,6 +858,7 @@ export const MealLibrarySidebar: React.FC = () => {
                             isFavourited={isSnackFavourited(snack.id)}
                             onFavourite={() => handleToggleFavourite(snack.id, "snack")}
                             onDragStart={handleDragStartSnack}
+                            onEdit={() => { setEditingSnack(snack as unknown as Ingredient); setIsSnackModalOpen(true); }}
                           />
                         ))}
                       </div>
@@ -851,6 +887,13 @@ export const MealLibrarySidebar: React.FC = () => {
           onClose={() => { setIsSnackModalOpen(false); setEditingSnack(null); }}
         />
       )}
+      <RecipeDetailModal
+        meal={viewingMeal}
+        isOpen={viewingMeal !== null}
+        onClose={() => setViewingMeal(null)}
+        canEdit={viewingMealCanEdit}
+        onEdit={() => { setEditingMeal(viewingMeal); setIsMealModalOpen(true); }}
+      />
     </>
   );
 };
@@ -861,9 +904,10 @@ interface SnackPoolItemProps {
   isFavourited: boolean;
   onFavourite: () => void;
   onDragStart: (e: React.DragEvent, id: string) => void;
+  onEdit?: () => void;
 }
 
-const SnackPoolItem: React.FC<SnackPoolItemProps> = ({ snack, isFavourited, onFavourite, onDragStart }) => {
+const SnackPoolItem: React.FC<SnackPoolItemProps> = ({ snack, isFavourited, onFavourite, onDragStart, onEdit }) => {
   const gradient = CATEGORY_GRADIENTS[snack.category] ?? CATEGORY_GRADIENTS["Other"];
   const initial = snack.name.trim()[0]?.toUpperCase() ?? "?";
 
@@ -880,6 +924,16 @@ const SnackPoolItem: React.FC<SnackPoolItemProps> = ({ snack, isFavourited, onFa
         }
       </div>
       <span className={styles.snackPoolName}>{snack.name}</span>
+      {onEdit && (
+        <button
+          className={styles.snackEditBtn}
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          draggable="false"
+          title="Edit snack"
+        >
+          ✎
+        </button>
+      )}
       <button
         className={`${styles.snackStarBtn} ${isFavourited ? styles.snackStarBtnActive : ""}`}
         onClick={(e) => { e.stopPropagation(); onFavourite(); }}

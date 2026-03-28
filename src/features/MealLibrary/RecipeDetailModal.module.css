@@ -1,0 +1,252 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal::-webkit-scrollbar { width: 6px; }
+.modal::-webkit-scrollbar-track { background: transparent; }
+.modal::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.13);
+  border-radius: 20px;
+}
+
+/* ── Hero image ── */
+.hero { flex-shrink: 0; }
+
+.heroImg {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+  border-radius: 16px 16px 0 0;
+  display: block;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+.headerContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1a202c;
+  margin: 0 0 2px;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.attribution {
+  font-size: 0.78rem;
+  color: #718096;
+  font-style: italic;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.description {
+  font-size: 0.88rem;
+  color: #4a5568;
+  margin: 0 0 8px;
+  line-height: 1.55;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.metaPill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(76, 81, 191, 0.1);
+  color: #4c51bf;
+  border: 1px solid rgba(76, 81, 191, 0.2);
+}
+
+.metaTag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #718096;
+  background: #f8fafc;
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid #edf2f7;
+}
+
+/* ── Header actions ── */
+.headerActions {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.editBtn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(76, 81, 191, 0.1);
+  color: #4c51bf;
+  cursor: pointer;
+  transition: background 140ms ease;
+  height: 30px;
+}
+
+.editBtn:hover { background: rgba(76, 81, 191, 0.18); }
+
+.closeBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #f7fafc;
+  color: #718096;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 140ms ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.closeBtn:hover {
+  background: #fff5f5;
+  color: #e53e3e;
+  border-color: #feb2b2;
+}
+
+/* ── Body ── */
+.body {
+  padding: 4px 20px 28px;
+}
+
+.section {
+  margin-top: 20px;
+}
+
+.sectionTitle {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
+}
+
+/* ── Ingredients ── */
+.ingredientList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ingredientItem {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+}
+
+.ingredientQty {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4c51bf;
+  white-space: nowrap;
+  min-width: 72px;
+}
+
+.ingredientName {
+  font-size: 0.88rem;
+  color: #2d3748;
+  font-weight: 500;
+}
+
+/* ── Instructions ── */
+.instructionList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.instructionItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.stepNumber {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #4c51bf;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.stepText {
+  font-size: 0.9rem;
+  color: #2d3748;
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* ── Empty state ── */
+.emptyBody {
+  font-size: 0.85rem;
+  color: #a0aec0;
+  text-align: center;
+  margin-top: 28px;
+  font-style: italic;
+}

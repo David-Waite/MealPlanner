@@ -540,6 +540,25 @@
   text-overflow: ellipsis;
 }
 
+.snackEditBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 0.82rem;
+  color: #cbd5e0;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+  transition: color 120ms ease, transform 120ms ease;
+  opacity: 0;
+}
+
+.snackPoolItem:hover .snackEditBtn {
+  opacity: 1;
+}
+
+.snackEditBtn:hover { color: #4c51bf; transform: scale(1.2); }
+
 .snackStarBtn {
   flex-shrink: 0;
   background: none;
