@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   updateProfile,
 } from "firebase/auth";
 import { doc, setDoc, collection, query, where, getDocs, Timestamp } from "firebase/firestore";
@@ -20,11 +21,13 @@ interface AuthModalProps {
 }
 
 type Tab = "signin" | "signup";
+type View = Tab | "forgot";
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const state = useAppState();
 
   const [tab, setTab] = useState<Tab>("signin");
+  const [view, setView] = useState<View>("signin");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,11 +41,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
 
+  // Forgot password fields
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
+
   const clearError = () => setError(null);
 
   const handleTabChange = (t: Tab) => {
     setTab(t);
+    setView(t);
     clearError();
+  };
+
+  const handleShowForgot = () => {
+    setResetEmail(signInEmail);
+    setResetSent(false);
+    clearError();
+    setView("forgot");
+  };
+
+  const handleBackToSignIn = () => {
+    clearError();
+    setView("signin");
   };
 
   // --- Sign In ---
@@ -113,28 +133,86 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  // --- Forgot Password ---
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    clearError();
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      setResetSent(true);
+    } catch (err: any) {
+      console.error("[AuthModal] Password reset error:", err);
+      setError(friendlyAuthError(err.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const modalTitle =
+    view === "forgot" ? "Reset password" :
+    tab === "signin" ? "Sign in" : "Create account";
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={tab === "signin" ? "Sign in" : "Create account"}
+      title={modalTitle}
     >
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${tab === "signin" ? styles.tabActive : ""}`}
-          onClick={() => handleTabChange("signin")}
-        >
-          Sign in
-        </button>
-        <button
-          className={`${styles.tab} ${tab === "signup" ? styles.tabActive : ""}`}
-          onClick={() => handleTabChange("signup")}
-        >
-          Create account
-        </button>
-      </div>
+      {view !== "forgot" && (
+        <div className={styles.tabs}>
+          <button
+            className={`${styles.tab} ${tab === "signin" ? styles.tabActive : ""}`}
+            onClick={() => handleTabChange("signin")}
+          >
+            Sign in
+          </button>
+          <button
+            className={`${styles.tab} ${tab === "signup" ? styles.tabActive : ""}`}
+            onClick={() => handleTabChange("signup")}
+          >
+            Create account
+          </button>
+        </div>
+      )}
 
-      {tab === "signin" ? (
+      {view === "forgot" ? (
+        <form className={styles.form} onSubmit={handleForgotPassword}>
+          {resetSent ? (
+            <div className={styles.resetConfirmation}>
+              <p>Check your inbox — we've sent a password reset link to <strong>{resetEmail}</strong>.</p>
+              <div className={styles.footer}>
+                <Button variant="primary" type="button" onClick={handleBackToSignIn}>
+                  Back to sign in
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {error && <div className={styles.error}>{error}</div>}
+              <FormGroup label="Email">
+                <Input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  autoComplete="email"
+                  autoFocus
+                />
+              </FormGroup>
+              <div className={styles.footer}>
+                <Button variant="secondary" type="button" onClick={handleBackToSignIn}>
+                  Back
+                </Button>
+                <Button variant="primary" type="submit" disabled={loading}>
+                  {loading ? "Sending…" : "Send reset email"}
+                </Button>
+              </div>
+            </>
+          )}
+        </form>
+      ) : tab === "signin" ? (
         <form className={styles.form} onSubmit={handleSignIn}>
           {error && <div className={styles.error}>{error}</div>}
           <FormGroup label="Email">
@@ -157,6 +235,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               autoComplete="current-password"
             />
           </FormGroup>
+          <button type="button" className={styles.forgotLink} onClick={handleShowForgot}>
+            Forgot password?
+          </button>
           <div className={styles.footer}>
             <Button variant="secondary" type="button" onClick={onClose}>
               Cancel

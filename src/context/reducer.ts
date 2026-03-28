@@ -158,6 +158,36 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         },
       };
 
+    // --- Meal Column Actions ---
+    case "ADD_MEAL_COLUMN":
+      return { ...state, mealColumns: [...state.mealColumns, action.payload.name] };
+
+    case "RENAME_MEAL_COLUMN":
+      return {
+        ...state,
+        mealColumns: state.mealColumns.map((c) =>
+          c === action.payload.oldName ? action.payload.newName : c
+        ),
+        plan: state.plan.map((p) =>
+          p.mealType === action.payload.oldName
+            ? { ...p, mealType: action.payload.newName }
+            : p
+        ),
+        snacks: state.snacks.map((s) =>
+          s.mealType === action.payload.oldName
+            ? { ...s, mealType: action.payload.newName }
+            : s
+        ),
+      };
+
+    case "REMOVE_MEAL_COLUMN":
+      return {
+        ...state,
+        mealColumns: state.mealColumns.filter((c) => c !== action.payload.name),
+        plan: state.plan.filter((p) => p.mealType !== action.payload.name),
+        snacks: state.snacks.filter((s) => s.mealType !== action.payload.name),
+      };
+
     case "MERGE_CLOUD_DATA":
       return {
         ...state,
@@ -168,6 +198,7 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         ...(action.payload.users ? { users: action.payload.users } : {}),
         ...(action.payload.ingredients ? { ingredients: action.payload.ingredients } : {}),
         ...(action.payload.favourites !== undefined ? { favourites: action.payload.favourites } : {}),
+        ...(action.payload.mealColumns ? { mealColumns: action.payload.mealColumns } : {}),
       };
 
     default:

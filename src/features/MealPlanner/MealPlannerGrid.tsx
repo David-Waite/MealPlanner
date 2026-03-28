@@ -1,6 +1,8 @@
 import React from "react";
 import { useAppState, useAppDispatch } from "../../context/hooks";
+import { useAuth } from "../../context/AuthContext";
 import type { PlannedMeal, PlannedSnack } from "../../types";
+import { saveMealColumns, renameMealColumnInCloud, removeMealColumnFromCloud } from "../../lib/cloudSync";
 import { MealSlot } from "./MealSlot";
 import styles from "./MealPlannerGrid.module.css";
 
@@ -45,9 +47,9 @@ function getRowHeight(
 export const MealPlannerGrid: React.FC = () => {
   const { mealColumns, selectedDates, plan, snacks } = useAppState();
   const dispatch = useAppDispatch();
+  const { user } = useAuth();
 
   // --- VIRTUALIZATION CONSTANTS ---
-  // BASE_ROW_HEIGHT is used for scroll math; actual rendered heights may be larger.
   const OVERSCAN = 2;
   const TOTAL_DAYS = 10000;
   const START_OFFSET_INDEX = 5000; // Index representing "Today"
@@ -108,9 +110,106 @@ export const MealPlannerGrid: React.FC = () => {
     currentTop += rowHeight;
   }
 
+  // --- Column resize (local state only) ---
+  const [columnWidths, setColumnWidths] = React.useState<number[] | null>(null);
+  const headerRef = React.useRef<HTMLDivElement>(null);
+
+  // Reset widths whenever columns are added or removed
+  React.useEffect(() => {
+    setColumnWidths(null);
+  }, [mealColumns.length]);
+
+  const handleResizeStart = (colIdx: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    let currentWidths: number[];
+    if (columnWidths) {
+      currentWidths = [...columnWidths];
+    } else {
+      const cells = headerRef.current?.querySelectorAll<HTMLElement>("[data-col-index]");
+      if (!cells || cells.length === 0) return;
+      currentWidths = Array.from(cells).map((el) => el.getBoundingClientRect().width);
+    }
+
+    const startX = e.clientX;
+    const startWidth = currentWidths[colIdx];
+
+    const onMouseMove = (moveE: MouseEvent) => {
+      const delta = moveE.clientX - startX;
+      const newWidths = [...currentWidths];
+      newWidths[colIdx] = Math.max(80, startWidth + delta);
+      setColumnWidths(newWidths);
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
   const gridStyle = {
-    gridTemplateColumns: `150px repeat(${mealColumns.length}, 1fr)`,
+    gridTemplateColumns: columnWidths
+      ? `150px ${columnWidths.map((w) => `${w}px`).join(" ")}`
+      : `150px repeat(${mealColumns.length}, 1fr)`,
   } as React.CSSProperties;
+
+  // --- Column management ---
+  const [editingColIndex, setEditingColIndex] = React.useState<number | null>(null);
+  const [editingColValue, setEditingColValue] = React.useState("");
+
+  const handleAddColumn = () => {
+    const newColumns = [...mealColumns, "New Column"];
+    dispatch({ type: "ADD_MEAL_COLUMN", payload: { name: "New Column" } });
+    if (user) saveMealColumns(user.uid, newColumns).catch(console.error);
+    setEditingColIndex(mealColumns.length);
+    setEditingColValue("New Column");
+  };
+
+  const handleDeleteColumn = (colName: string) => {
+    const hasItems =
+      plan.some((p) => p.mealType === colName) ||
+      snacks.some((s) => s.mealType === colName);
+    if (
+      hasItems &&
+      !window.confirm(
+        `"${colName}" has planned items. Removing it will delete them. Continue?`
+      )
+    )
+      return;
+    const newColumns = mealColumns.filter((c) => c !== colName);
+    dispatch({ type: "REMOVE_MEAL_COLUMN", payload: { name: colName } });
+    if (user) {
+      Promise.all([
+        saveMealColumns(user.uid, newColumns),
+        removeMealColumnFromCloud(user.uid, colName),
+      ]).catch(console.error);
+    }
+  };
+
+  const startRename = (idx: number, currentName: string) => {
+    setEditingColIndex(idx);
+    setEditingColValue(currentName);
+  };
+
+  const commitRename = (idx: number) => {
+    const newName = editingColValue.trim();
+    if (newName && newName !== mealColumns[idx] && !mealColumns.includes(newName)) {
+      const oldName = mealColumns[idx];
+      const newColumns = mealColumns.map((c, i) => (i === idx ? newName : c));
+      dispatch({ type: "RENAME_MEAL_COLUMN", payload: { oldName, newName } });
+      if (user) {
+        Promise.all([
+          saveMealColumns(user.uid, newColumns),
+          renameMealColumnInCloud(user.uid, oldName, newName),
+        ]).catch(console.error);
+      }
+    }
+    setEditingColIndex(null);
+  };
 
   // --- Drag Selection State ---
   const [isDragging, setIsDragging] = React.useState(false);
@@ -192,14 +291,57 @@ export const MealPlannerGrid: React.FC = () => {
   return (
     <div className={styles.gridContainer}>
       {/* Sticky column header */}
-      <div className={styles.gridHeader} style={gridStyle}>
+      <div className={styles.gridHeader} style={gridStyle} ref={headerRef}>
         <div className={styles.headerCell}>Day</div>
-        {mealColumns.map((colName) => (
-          <div key={colName} className={styles.headerCell}>
-            {colName}
+        {mealColumns.map((colName, idx) => (
+          <div key={colName} className={styles.headerCell} data-col-index={idx}>
+            {editingColIndex === idx ? (
+              <input
+                className={styles.headerCellInput}
+                value={editingColValue}
+                autoFocus
+                onChange={(e) => setEditingColValue(e.target.value)}
+                onBlur={() => commitRename(idx)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitRename(idx);
+                  if (e.key === "Escape") setEditingColIndex(null);
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span
+                className={styles.headerCellName}
+                onDoubleClick={() => startRename(idx, colName)}
+                title="Double-click to rename"
+              >
+                {colName}
+              </span>
+            )}
+            {mealColumns.length > 1 && (
+              <button
+                className={styles.deleteColBtn}
+                onClick={() => handleDeleteColumn(colName)}
+                title={`Remove "${colName}"`}
+              >
+                ×
+              </button>
+            )}
+            <div
+              className={styles.resizeHandle}
+              onMouseDown={(e) => handleResizeStart(idx, e)}
+            />
           </div>
         ))}
       </div>
+
+      {/* Add column button — floats over top-right of header */}
+      <button
+        className={styles.addColumnBtn}
+        onClick={handleAddColumn}
+        title="Add column"
+      >
+        +
+      </button>
 
       {/* Scrollable body */}
       <div className={styles.gridBody} ref={containerRef} onScroll={handleScroll}>

@@ -8,6 +8,7 @@ export type MergeCloudPayload = {
   users?: User[];
   ingredients?: Ingredient[];
   favourites?: FavouriteItem[];
+  mealColumns?: string[];
 };
 
 export type Action =
@@ -33,4 +34,7 @@ export type Action =
   | { type: "DELETE_CUSTOM_UNIT"; payload: { customUnitId: string } }
   | { type: "SET_SHOPPING_LIST_SETTINGS"; payload: Partial<ShoppingListSettings> }
   | { type: "TOGGLE_FAVOURITE"; payload: FavouriteItem }
+  | { type: "ADD_MEAL_COLUMN"; payload: { name: string } }
+  | { type: "RENAME_MEAL_COLUMN"; payload: { oldName: string; newName: string } }
+  | { type: "REMOVE_MEAL_COLUMN"; payload: { name: string } }
   | { type: "MERGE_CLOUD_DATA"; payload: MergeCloudPayload };

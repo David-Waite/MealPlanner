@@ -217,7 +217,6 @@
 /* --- Sync badge --- */
 
 .syncBadge {
-  margin-left: auto;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -228,6 +227,23 @@
   border-radius: 20px;
   padding: 3px 10px;
   white-space: nowrap;
+}
+
+.syncBadgeSyncing {
+  color: #744210;
+  background-color: #fffbeb;
+  border-color: #f6e05e;
+}
+
+.syncBadgeError {
+  color: #c53030;
+  background-color: #fff5f5;
+  border-color: #fc8181;
+}
+
+.syncPrompt {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
 }
 
 /* --- Sync checkbox (on item summary row) --- */
@@ -250,12 +266,16 @@
   text-decoration: line-through;
 }
 
-/* --- Footer --- */
+/* --- Footer content (inside Modal footer slot) --- */
 
-.footer {
+.footerContent {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: var(--spacing-3);
-  padding-top: var(--spacing-4);
-  border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+.syncArea {
+  display: flex;
+  align-items: center;
 }

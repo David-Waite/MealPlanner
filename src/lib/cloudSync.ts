@@ -109,6 +109,7 @@ export async function migrateLocalToCloud(
       customUnits: state.customUnits,
       users: state.users,
       shoppingListSettings: state.shoppingListSettings,
+      mealColumns: state.mealColumns,
       updatedAt: Timestamp.now(),
     },
     { merge: true }
@@ -159,7 +160,7 @@ export async function syncFromCloud(
   uid: string,
   localMeals: Meal[],
   localCustomUnits: CustomUnit[]
-): Promise<{ meals: Meal[]; customUnits: CustomUnit[]; plan: PlannedMeal[]; snacks: PlannedSnack[]; users: User[] | null; ingredients: Ingredient[]; favourites: FavouriteItem[] | null }> {
+): Promise<{ meals: Meal[]; customUnits: CustomUnit[]; plan: PlannedMeal[]; snacks: PlannedSnack[]; users: User[] | null; ingredients: Ingredient[]; favourites: FavouriteItem[] | null; mealColumns: string[] | null }> {
   console.log("[syncFromCloud] Starting for uid:", uid, "| localMeals:", localMeals.length, "| localCustomUnits:", localCustomUnits.length);
   // Read recipes from subcollection
   const recipesRef = collection(db, "users", uid, "recipes").withConverter(recipeConverter);
@@ -263,6 +264,9 @@ export async function syncFromCloud(
   const cloudFavourites: FavouriteItem[] | null = userDocSnap.exists()
     ? (userDocSnap.data().favourites ?? null)
     : null;
+  const cloudMealColumns: string[] | null = userDocSnap.exists()
+    ? (userDocSnap.data().mealColumns ?? null)
+    : null;
 
   // Load ingredients: global catalogue + user's local (unreviewed) ingredients
   const [globalIngSnap, localIngSnap] = await Promise.all([
@@ -302,6 +306,7 @@ export async function syncFromCloud(
     users: cloudUsers,
     ingredients,
     favourites: cloudFavourites,
+    mealColumns: cloudMealColumns,
   };
 }
 
@@ -838,6 +843,63 @@ export async function rejectSnackUpdate(
   await updateDoc(doc(db, "users", ownerId, "localIngredients", ingredientId), {
     globalStatus: "approved",
   });
+}
+
+// ---------------------------------------------------------------------------
+// saveMealColumns
+// Writes the current mealColumns array to the user document.
+// ---------------------------------------------------------------------------
+
+export async function saveMealColumns(uid: string, mealColumns: string[]): Promise<void> {
+  await updateDoc(doc(db, "users", uid), { mealColumns });
+}
+
+// ---------------------------------------------------------------------------
+// renameMealColumnInCloud
+// Batch-updates all plan + snack documents that reference the old column name.
+// Call saveMealColumns separately to update the user document.
+// ---------------------------------------------------------------------------
+
+export async function renameMealColumnInCloud(
+  uid: string,
+  oldName: string,
+  newName: string
+): Promise<void> {
+  const BATCH_SIZE = 490;
+
+  const [planSnap, snackSnap] = await Promise.all([
+    getDocs(query(collection(db, "users", uid, "plan"), where("mealType", "==", oldName))),
+    getDocs(query(collection(db, "users", uid, "snacks"), where("mealType", "==", oldName))),
+  ]);
+
+  const allDocs = [...planSnap.docs, ...snackSnap.docs];
+  for (let i = 0; i < allDocs.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    allDocs.slice(i, i + BATCH_SIZE).forEach((d) => batch.update(d.ref, { mealType: newName }));
+    await batch.commit();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// removeMealColumnFromCloud
+// Deletes all plan + snack documents for the removed column.
+// Call saveMealColumns separately to update the user document.
+// ---------------------------------------------------------------------------
+
+export async function removeMealColumnFromCloud(uid: string, name: string): Promise<void> {
+  const BATCH_SIZE = 490;
+
+  const [planSnap, snackSnap] = await Promise.all([
+    getDocs(query(collection(db, "users", uid, "plan"), where("mealType", "==", name))),
+    getDocs(query(collection(db, "users", uid, "snacks"), where("mealType", "==", name))),
+  ]);
+
+  const allDocs = [...planSnap.docs, ...snackSnap.docs];
+  for (let i = 0; i < allDocs.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    allDocs.slice(i, i + BATCH_SIZE).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
 }
 
 // ---------------------------------------------------------------------------

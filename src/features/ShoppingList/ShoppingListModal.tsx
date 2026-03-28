@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import type {
   Ingredient,
   Meal,
   PlannedMeal,
+  PlannedSnack,
   UnitRef,
   MetricUnit,
   ImperialUnit,
@@ -114,7 +115,8 @@ const generateShoppingList = (
   plan: PlannedMeal[],
   meals: Meal[],
   allIngredients: Ingredient[],
-  selectedDates: string[]
+  selectedDates: string[],
+  snacks: PlannedSnack[]
 ): GroupedList => {
   if (selectedDates.length === 0) return [];
 
@@ -163,6 +165,47 @@ const generateShoppingList = (
         } else {
           existing.details.push(detailEntry);
         }
+      }
+    }
+  }
+
+  // Process snacks
+  const filteredSnacks = snacks.filter((s) => selectedDates.includes(s.date));
+
+  for (const snack of filteredSnacks) {
+    const { ingredientId, quantity: amountToAdd, unit: unitRef } = snack;
+    const masterIng = allIngredients.find((i) => i.id === ingredientId);
+    if (!masterIng) continue;
+
+    const detailEntry: AggregatedItemDetail = {
+      date: snack.date,
+      formattedDate: formatDate(snack.date),
+      amount: amountToAdd,
+      mealName: "Snack",
+      unitRef,
+    };
+
+    if (!aggMap.has(ingredientId)) {
+      aggMap.set(ingredientId, {
+        ingredientId,
+        name: masterIng.name,
+        category: masterIng.category,
+        perishable: masterIng.perishable,
+        unitRef,
+        totalQuantity: amountToAdd,
+        details: [detailEntry],
+      });
+    } else {
+      const existing = aggMap.get(ingredientId)!;
+      existing.totalQuantity += amountToAdd;
+
+      const existingDetail = existing.details.find(
+        (d) => d.date === snack.date && d.mealName === "Snack"
+      );
+      if (existingDetail) {
+        existingDetail.amount += amountToAdd;
+      } else {
+        existing.details.push(detailEntry);
       }
     }
   }
@@ -228,7 +271,7 @@ interface ShoppingListModalProps {
 type SyncStatus = "idle" | "syncing" | "synced" | "error";
 
 export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, onClose }) => {
-  const { plan, meals, ingredients, customUnits, selectedDates, shoppingListSettings } = useAppState();
+  const { plan, meals, ingredients, customUnits, selectedDates, shoppingListSettings, snacks } = useAppState();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
 
@@ -237,20 +280,74 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
   // --- Sync state ---
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [activeListId, setActiveListId] = useState<string | null>(null);
-  // Live items from Firestore — used for checked state and for writing updates
   const [syncedItems, setSyncedItems] = useState<FirestoreShoppingListItem[]>([]);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const shoppingList = useMemo(
-    () => generateShoppingList(plan, meals, ingredients, selectedDates),
-    [plan, meals, ingredients, selectedDates]
+    () => generateShoppingList(plan, meals, ingredients, selectedDates, snacks),
+    [plan, meals, ingredients, selectedDates, snacks]
   );
 
-  // Reset sync when selected dates change (list is now stale)
+  // Auto-sync whenever the list changes (debounced)
   useEffect(() => {
-    setActiveListId(null);
-    setSyncStatus("idle");
-    setSyncedItems([]);
-  }, [selectedDates]);
+    if (!user) return;
+
+    if (shoppingList.length === 0) {
+      setActiveListId(null);
+      setSyncStatus("idle");
+      setSyncedItems([]);
+      return;
+    }
+
+    setSyncStatus("syncing");
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+
+    syncTimerRef.current = setTimeout(async () => {
+      const items: FirestoreShoppingListItem[] = shoppingList.flatMap((group) =>
+        group.items.map((item) => {
+          const sortedDetails = [...item.details].sort((a, b) =>
+            a.date.localeCompare(b.date)
+          );
+          const lastDetail = sortedDetails[sortedDetails.length - 1];
+          return {
+            id: item.ingredientId,
+            ingredientName: item.name,
+            category: item.category,
+            totalQuantity: item.totalQuantity,
+            unitRef: item.unitRef,
+            checked: false,
+            lastDate: lastDetail.date,
+            lastFormattedDate: lastDetail.formattedDate,
+            details: sortedDetails.map((d) => ({
+              mealName: d.mealName,
+              date: d.date,
+              formattedDate: d.formattedDate,
+              quantity: d.amount,
+              unitRef: d.unitRef,
+            })),
+          };
+        })
+      );
+
+      const listName =
+        selectedDates.length === 1
+          ? `Shopping — ${formatDate(selectedDates[0])}`
+          : `Shopping — ${formatDate(selectedDates[0])} to ${formatDate(selectedDates[selectedDates.length - 1])}`;
+
+      try {
+        const listId = await syncShoppingList(user.uid, listName, items, shoppingListSettings);
+        setActiveListId(listId);
+        setSyncStatus("synced");
+      } catch (err) {
+        console.error("[ShoppingList] Auto-sync failed:", err);
+        setSyncStatus("error");
+      }
+    }, 1500);
+
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, [shoppingList, user]);
 
   // Subscribe to Firestore when an active list is synced
   useEffect(() => {
@@ -270,64 +367,12 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
     dispatch({ type: "SET_SHOPPING_LIST_SETTINGS", payload: patch });
   };
 
-  // --- Sync handler ---
-  const handleSync = async () => {
-    if (!user) return;
-    setSyncStatus("syncing");
-
-    const items: FirestoreShoppingListItem[] = shoppingList.flatMap((group) =>
-      group.items.map((item) => {
-        const sortedDetails = [...item.details].sort((a, b) =>
-          a.date.localeCompare(b.date)
-        );
-        const lastDetail = sortedDetails[sortedDetails.length - 1];
-        return {
-          id: item.ingredientId,
-          ingredientName: item.name,
-          category: item.category,
-          totalQuantity: item.totalQuantity,
-          unitRef: item.unitRef,
-          checked: false,
-          lastDate: lastDetail.date,
-          lastFormattedDate: lastDetail.formattedDate,
-          details: sortedDetails.map((d) => ({
-            mealName: d.mealName,
-            date: d.date,
-            formattedDate: d.formattedDate,
-            quantity: d.amount,
-            unitRef: d.unitRef,
-          })),
-        };
-      })
-    );
-
-    const listName =
-      selectedDates.length === 1
-        ? `Shopping — ${formatDate(selectedDates[0])}`
-        : `Shopping — ${formatDate(selectedDates[0])} to ${formatDate(selectedDates[selectedDates.length - 1])}`;
-
-    try {
-      const listId = await syncShoppingList(
-        user.uid,
-        listName,
-        items,
-        shoppingListSettings
-      );
-      setActiveListId(listId);
-      setSyncStatus("synced");
-    } catch (err) {
-      console.error("[ShoppingList] Sync failed:", err);
-      setSyncStatus("error");
-    }
-  };
-
   // --- Item check/uncheck (synced mode) ---
   const handleToggleItem = async (ingredientId: string) => {
     if (!activeListId) return;
     const current = syncedItems.find((i) => i.id === ingredientId);
     const newChecked = !(current?.checked ?? false);
 
-    // Optimistic update
     setSyncedItems((prev) =>
       prev.map((item) =>
         item.id === ingredientId ? { ...item, checked: newChecked } : item
@@ -338,7 +383,6 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
       await toggleShoppingListItem(user!.uid, activeListId, syncedItems, ingredientId, newChecked);
     } catch (err) {
       console.error("[ShoppingList] Toggle failed:", err);
-      // Revert optimistic update on failure
       setSyncedItems((prev) =>
         prev.map((item) =>
           item.id === ingredientId ? { ...item, checked: !newChecked } : item
@@ -377,8 +421,33 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
   const isSynced = syncStatus === "synced" && activeListId !== null;
   const checkedMap = new Map(syncedItems.map((i) => [i.id, i.checked]));
 
+  const footer = (
+    <div className={styles.footerContent}>
+      <div className={styles.syncArea}>
+        {user ? (
+          syncStatus === "syncing" ? (
+            <span className={`${styles.syncBadge} ${styles.syncBadgeSyncing}`}>Syncing…</span>
+          ) : syncStatus === "synced" ? (
+            <span className={styles.syncBadge}>Synced</span>
+          ) : syncStatus === "error" ? (
+            <span className={`${styles.syncBadge} ${styles.syncBadgeError}`}>Sync failed</span>
+          ) : null
+        ) : (
+          <span className={styles.syncPrompt}>Sign up to sync to your phone</span>
+        )}
+      </div>
+      <Button
+        variant="secondary"
+        onClick={handleCopyToClipboard}
+        disabled={shoppingList.length === 0}
+      >
+        {copied ? "Copied!" : "Copy to Notes"}
+      </Button>
+    </div>
+  );
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Shopping List">
+    <Modal isOpen={isOpen} onClose={onClose} title="Shopping List" footer={footer}>
       <div className={styles.contentWrapper}>
 
         {/* Options panel */}
@@ -416,11 +485,6 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
               Show custom unit labels
             </label>
           </div>
-          {isSynced && (
-            <div className={styles.syncBadge}>
-              Live sync active
-            </div>
-          )}
         </div>
 
         <div className={styles.container}>
@@ -489,31 +553,6 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
             </div>
           ))}
         </div>
-      </div>
-
-      <div className={styles.footer}>
-        {user && (
-          <Button
-            variant="primary"
-            onClick={handleSync}
-            disabled={shoppingList.length === 0 || syncStatus === "syncing"}
-          >
-            {syncStatus === "syncing"
-              ? "Syncing…"
-              : syncStatus === "synced"
-              ? "Re-sync"
-              : syncStatus === "error"
-              ? "Sync failed — retry"
-              : "Sync to App"}
-          </Button>
-        )}
-        <Button
-          variant="secondary"
-          onClick={handleCopyToClipboard}
-          disabled={shoppingList.length === 0}
-        >
-          {copied ? "Copied!" : "Copy to Notes"}
-        </Button>
       </div>
     </Modal>
   );

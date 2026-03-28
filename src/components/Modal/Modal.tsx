@@ -6,6 +6,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   size?: "default" | "large";
 }
 
@@ -14,6 +15,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
+  footer,
   size = "default",
 }) => {
   if (!isOpen) {
@@ -37,6 +39,7 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         </div>
         <div className={styles.content}>{children}</div>
+        {footer && <div className={styles.footer}>{footer}</div>}
       </div>
     </div>
   );
