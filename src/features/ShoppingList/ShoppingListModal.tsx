@@ -116,10 +116,12 @@ const generateShoppingList = (
   meals: Meal[],
   allIngredients: Ingredient[],
   selectedDates: string[],
-  snacks: PlannedSnack[]
+  snacks: PlannedSnack[],
+  allUsers: { id: string }[]
 ): GroupedList => {
   if (selectedDates.length === 0) return [];
 
+  const activeUserIds = new Set(allUsers.map((u) => u.id));
   const filteredPlan = plan.filter((p) => selectedDates.includes(p.date));
   const aggMap = new Map<string, AggregatedItem>();
 
@@ -127,11 +129,14 @@ const generateShoppingList = (
     const mealDetails = meals.find((m) => m.id === plannedMeal.mealId);
     if (!mealDetails) continue;
 
-    const multiplier = plannedMeal.assignedUsers.length / mealDetails.servings;
+    // Only count users that still exist — stale IDs from deleted users are ignored
+    const activeAssignedCount = plannedMeal.assignedUsers.filter((id) => activeUserIds.has(id)).length;
+    const multiplier = activeAssignedCount / mealDetails.servings;
 
     for (const ingredient of mealDetails.ingredients) {
       const { ingredientId, unit: unitRef } = ingredient;
       const amountToAdd = ingredient.quantity * multiplier;
+
       const masterIng = allIngredients.find((i) => i.id === ingredientId);
       if (!masterIng) continue;
 
@@ -173,7 +178,9 @@ const generateShoppingList = (
   const filteredSnacks = snacks.filter((s) => selectedDates.includes(s.date));
 
   for (const snack of filteredSnacks) {
-    const { ingredientId, quantity: amountToAdd, unit: unitRef } = snack;
+    const { ingredientId, unit: unitRef } = snack;
+    const activeAssignedCount = snack.assignedUsers.filter((id) => activeUserIds.has(id)).length;
+    const amountToAdd = snack.quantity * activeAssignedCount;
     const masterIng = allIngredients.find((i) => i.id === ingredientId);
     if (!masterIng) continue;
 
@@ -271,7 +278,7 @@ interface ShoppingListModalProps {
 type SyncStatus = "idle" | "syncing" | "synced" | "error";
 
 export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, onClose }) => {
-  const { plan, meals, ingredients, customUnits, selectedDates, shoppingListSettings, snacks } = useAppState();
+  const { plan, meals, ingredients, customUnits, selectedDates, shoppingListSettings, snacks, users } = useAppState();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
 
@@ -284,8 +291,8 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const shoppingList = useMemo(
-    () => generateShoppingList(plan, meals, ingredients, selectedDates, snacks),
-    [plan, meals, ingredients, selectedDates, snacks]
+    () => generateShoppingList(plan, meals, ingredients, selectedDates, snacks, users),
+    [plan, meals, ingredients, selectedDates, snacks, users]
   );
 
   // Auto-sync whenever the list changes (debounced)
@@ -347,7 +354,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
     return () => {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     };
-  }, [shoppingList, user]);
+  }, [shoppingList, user, selectedDates, shoppingListSettings]);
 
   // Subscribe to Firestore when an active list is synced
   useEffect(() => {
@@ -361,7 +368,7 @@ export const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ isOpen, on
     });
 
     return unsubscribe;
-  }, [activeListId]);
+  }, [activeListId, user]);
 
   const updateSettings = (patch: Partial<ShoppingListSettings>) => {
     dispatch({ type: "SET_SHOPPING_LIST_SETTINGS", payload: patch });

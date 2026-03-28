@@ -29,6 +29,7 @@ export type Action =
   | { type: "SET_SELECTED_INSTANCE"; payload: string | null }
   | { type: "ADD_INGREDIENT"; payload: Ingredient }
   | { type: "UPDATE_INGREDIENT"; payload: Ingredient }
+  | { type: "DELETE_INGREDIENT"; payload: { ingredientId: string } }
   | { type: "ADD_CUSTOM_UNIT"; payload: CustomUnit }
   | { type: "UPDATE_CUSTOM_UNIT"; payload: CustomUnit }
   | { type: "DELETE_CUSTOM_UNIT"; payload: { customUnitId: string } }

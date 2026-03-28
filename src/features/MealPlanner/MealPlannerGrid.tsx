@@ -98,6 +98,8 @@ export const MealPlannerGrid: React.FC = () => {
     height: number;
   }[] = [];
 
+  const todayString = toISODateString(new Date());
+
   let currentTop = startIndex * BASE_ROW_HEIGHT;
   for (let i = startIndex; i <= endIndex; i++) {
     const date = new Date();
@@ -352,6 +354,8 @@ export const MealPlannerGrid: React.FC = () => {
         >
           {visibleItems.map(({ date, dateString, top, height }) => {
             const isSelected = selectedDates.includes(dateString);
+            const isToday = dateString === todayString;
+            const isPast = dateString < todayString;
 
             const rowStyle: React.CSSProperties = {
               ...gridStyle,
@@ -360,12 +364,16 @@ export const MealPlannerGrid: React.FC = () => {
             };
 
             return (
-              <div key={dateString} className={styles.virtualRow} style={rowStyle}>
+              <div
+                key={dateString}
+                className={`${styles.virtualRow} ${isPast ? styles.virtualRowPast : ""}`}
+                style={rowStyle}
+              >
                 {/* Day label cell */}
                 <div
                   className={`${styles.dayCell} ${styles.cell} ${
                     isSelected ? styles.dayCellSelected : ""
-                  }`}
+                  } ${isToday ? styles.dayCellToday : ""}`}
                   onMouseDown={(e) => handleDayMouseDown(dateString, e)}
                   onMouseEnter={() => handleDayMouseEnter(dateString)}
                   onKeyDown={(e) => {
@@ -378,6 +386,7 @@ export const MealPlannerGrid: React.FC = () => {
                   role="button"
                   aria-pressed={isSelected}
                 >
+                  {isToday && <div className={styles.dayCellTodayLabel}>Today</div>}
                   <div>
                     {date.toLocaleDateString("en-US", { weekday: "long" })}
                   </div>

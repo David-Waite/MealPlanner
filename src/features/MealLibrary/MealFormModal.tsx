@@ -281,7 +281,7 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
       const finalPhotoUrl = photoFile && user ? await uploadPhoto(user.uid, recipeId) : photoUrl;
       const cleanedSteps: RecipeStep[] = steps
         .filter(s => s.text.trim() || s.stepIngredients.length > 0)
-        .map(s => ({ text: s.text, stepIngredients: s.stepIngredients.map(({ tempId: _t, ...rest }) => rest) }));
+        .map(s => ({ text: s.text, stepIngredients: s.stepIngredients.map(si => ({ ingredientId: si.ingredientId, quantity: si.quantity, unit: si.unit })) }));
       const cleanedInstructions = cleanedSteps.map(s => s.text).filter(s => s.trim());
       const mealPayload: Meal = {
         id: recipeId, name: name.trim(), servings, photoUrl: finalPhotoUrl,

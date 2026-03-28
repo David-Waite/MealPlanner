@@ -117,6 +117,12 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         ),
       };
 
+    case "DELETE_INGREDIENT":
+      return {
+        ...state,
+        ingredients: state.ingredients.filter((i) => i.id !== action.payload.ingredientId),
+      };
+
     // --- Custom Unit Actions ---
     case "ADD_CUSTOM_UNIT":
       return { ...state, customUnits: [...state.customUnits, action.payload] };
@@ -188,7 +194,13 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         snacks: state.snacks.filter((s) => s.mealType !== action.payload.name),
       };
 
-    case "MERGE_CLOUD_DATA":
+    case "MERGE_CLOUD_DATA": {
+      const mergedUsers = action.payload.users ?? state.users;
+      const userIdSet = new Set(mergedUsers.map((u) => u.id));
+      const validSelected = state.selectedUserIds.filter((id) => userIdSet.has(id));
+      const selectedUserIds = validSelected.length > 0
+        ? validSelected
+        : mergedUsers.length > 0 ? [mergedUsers[0].id] : state.selectedUserIds;
       return {
         ...state,
         meals: action.payload.meals,
@@ -199,7 +211,9 @@ export const appReducer = (state: AppState, action: Action): AppState => {
         ...(action.payload.ingredients ? { ingredients: action.payload.ingredients } : {}),
         ...(action.payload.favourites !== undefined ? { favourites: action.payload.favourites } : {}),
         ...(action.payload.mealColumns ? { mealColumns: action.payload.mealColumns } : {}),
+        selectedUserIds,
       };
+    }
 
     default:
       return state;

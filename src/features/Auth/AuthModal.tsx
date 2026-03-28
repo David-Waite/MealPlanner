@@ -5,6 +5,7 @@ import {
   sendPasswordResetEmail,
   updateProfile,
 } from "firebase/auth";
+import type { AuthError } from "firebase/auth";
 import { doc, setDoc, collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
 import { migrateLocalToCloud } from "../../lib/cloudSync";
@@ -74,9 +75,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       await signInWithEmailAndPassword(auth, signInEmail, signInPassword);
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AuthModal] Sign in error:", err);
-      setError(friendlyAuthError(err.code));
+      setError(friendlyAuthError((err as AuthError).code));
     } finally {
       setLoading(false);
     }
@@ -125,9 +126,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       await migrateLocalToCloud(user.uid, state);
 
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AuthModal] Sign up error:", err);
-      setError(friendlyAuthError(err.code));
+      setError(friendlyAuthError((err as AuthError).code));
     } finally {
       setLoading(false);
     }
@@ -141,9 +142,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       await sendPasswordResetEmail(auth, resetEmail);
       setResetSent(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AuthModal] Password reset error:", err);
-      setError(friendlyAuthError(err.code));
+      setError(friendlyAuthError((err as AuthError).code));
     } finally {
       setLoading(false);
     }

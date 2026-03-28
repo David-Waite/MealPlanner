@@ -197,14 +197,20 @@ export async function syncFromCloud(
       mergedMeals.push(firestoreRecipeToMeal(cloud));
     } else if (local && cloud) {
       if ((local.localUpdatedAt || 0) >= cloud.localUpdatedAt) {
-        // Local is newer or equal — local wins, push update to Firestore
+        // Local is newer or equal — local wins for content, but globalStatus
+        // and rejectionReason are admin-controlled so always take from cloud.
+        const merged = {
+          ...local,
+          globalStatus: cloud.globalStatus,
+          rejectionReason: cloud.rejectionReason,
+        };
         const recipeRef = doc(
           collection(db, "users", uid, "recipes").withConverter(recipeConverter),
           id
         );
-        batch.set(recipeRef, mealToFirestore(local, uid, localCustomUnits));
+        batch.set(recipeRef, mealToFirestore(merged, uid, localCustomUnits));
         batchCount++;
-        mergedMeals.push(local);
+        mergedMeals.push(merged);
       } else {
         // Cloud is newer — use cloud version
         mergedMeals.push(firestoreRecipeToMeal(cloud));
@@ -731,6 +737,10 @@ export async function updateLocalIngredient(
     ingredient.id
   );
   await setDoc(ref, ingredient);
+}
+
+export async function deleteLocalIngredient(uid: string, ingredientId: string): Promise<void> {
+  await deleteDoc(doc(db, "users", uid, "localIngredients", ingredientId));
 }
 
 // ---------------------------------------------------------------------------

@@ -228,6 +228,29 @@
   border-right-color: #4a90e2;
 }
 
+.dayCellToday {
+  background-color: #4c51bf;
+  border-right-color: #3c41af;
+  color: #fff;
+}
+
+.dayCellToday .dayCellDate {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.dayCellTodayLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 1px;
+}
+
+.virtualRowPast {
+  opacity: 0.45;
+}
+
 .dayCellDate {
   font-size: 0.8rem;
   font-weight: 400;

@@ -10,7 +10,7 @@ const defaultDispatch: Dispatch<Action> = () => {
   console.error("Tried to dispatch an action outside of AppStateProvider");
 };
 
-// Create and export the two context objects
+// Create and export the context objects
 export const AppStateContext = createContext<AppState>(initialState);
-export const AppDispatchContext =
-  createContext<Dispatch<Action>>(defaultDispatch);
+export const AppDispatchContext = createContext<Dispatch<Action>>(defaultDispatch);
+export const AppLoadingContext = createContext<boolean>(true);

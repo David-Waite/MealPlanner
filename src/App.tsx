@@ -10,6 +10,7 @@ import { FriendsModal } from "./features/Friends/FriendsModal";
 import { AdminPage } from "./features/Admin/AdminPage";
 import { AccountDropdown } from "./features/Auth/AccountDropdown";
 import { useAuth } from "./context/AuthContext";
+import { useAppLoading } from "./context/hooks";
 import { useAppHotkeys } from "./hooks/useAppHotkeys";
 import { useFriendsPending } from "./hooks/useFriendsPending";
 import { signOut } from "firebase/auth";
@@ -17,7 +18,8 @@ import { auth } from "./lib/firebase";
 import { Button } from "./components/Button/Button";
 
 function App() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
+  const isSyncing = useAppLoading();
   const [isShoppingListOpen, setIsShoppingListOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isFriendsOpen, setIsFriendsOpen] = useState(false);
@@ -61,6 +63,17 @@ function App() {
   }, []);
 
   useAppHotkeys();
+
+  if (authLoading || isSyncing) {
+    return (
+      <div className={styles.loadingScreen}>
+        <div className={styles.loadingContent}>
+          <div className={styles.loadingTitle}>ShopSmart</div>
+          <div className={styles.loadingSpinner} />
+        </div>
+      </div>
+    );
+  }
 
   if (showAdmin) {
     return (

@@ -1,4 +1,4 @@
-import type { AppState, CoreUnit, CustomUnit, UnitRef } from "../types";
+import type { AppState, CoreUnit, CustomUnit, Meal, RecipeIngredient, UnitRef } from "../types";
 import { initialState } from "./initialState";
 
 const STORAGE_KEY = "shopSmartState";
@@ -11,15 +11,18 @@ const LEGACY_TO_CORE: Record<string, CoreUnit> = {
   "½ tbsp": "½ tbsp", tbsp: "tbsp", cup: "cup", unit: "unit",
 };
 
+type LegacyIngredient = Omit<RecipeIngredient, "unit"> & { unit: string | UnitRef };
+type LegacyMeal = Omit<Meal, "ingredients"> & { ingredients: LegacyIngredient[] };
+
 // Converts meals that still use the old string unit format to the new UnitRef format.
 // For non-standard string units (e.g. "cloves", "large", "can"), we look up a matching
 // custom unit by ingredientId + label, or create a label-only one on the fly.
-function migrateMeals(meals: any[], customUnits: CustomUnit[]): { meals: any[]; customUnits: CustomUnit[] } {
+function migrateMeals(meals: LegacyMeal[], customUnits: CustomUnit[]): { meals: Meal[]; customUnits: CustomUnit[] } {
   const migratedCustomUnits = [...customUnits];
 
-  const migratedMeals = meals.map((meal: any) => ({
+  const migratedMeals = meals.map((meal) => ({
     ...meal,
-    ingredients: meal.ingredients.map((ing: any) => {
+    ingredients: meal.ingredients.map((ing) => {
       // Already in new format
       if (ing.unit && typeof ing.unit === "object") return ing;
 
@@ -48,7 +51,7 @@ function migrateMeals(meals: any[], customUnits: CustomUnit[]): { meals: any[]; 
     }),
   }));
 
-  return { meals: migratedMeals, customUnits: migratedCustomUnits };
+  return { meals: migratedMeals as Meal[], customUnits: migratedCustomUnits };
 }
 
 export const saveState = (state: AppState): void => {
@@ -79,14 +82,14 @@ export const loadState = (): AppState => {
     // Ensure every meal has localUpdatedAt (new field)
     merged = {
       ...merged,
-      meals: merged.meals.map((m: any) =>
+      meals: merged.meals.map((m) =>
         m.localUpdatedAt !== undefined ? m : { ...m, localUpdatedAt: 0 }
       ),
     };
 
     // Migrate meals if they still use old string-based units
     const needsMigration = merged.meals.some(
-      (m) => m.ingredients.some((i: any) => typeof i.unit === "string")
+      (m) => m.ingredients.some((i) => typeof (i.unit as unknown) === "string")
     );
     if (needsMigration) {
       const { meals, customUnits } = migrateMeals(merged.meals, merged.customUnits);

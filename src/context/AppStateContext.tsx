@@ -1,10 +1,10 @@
-import React, { useReducer, useEffect, useRef } from "react";
+import React, { useReducer, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { appReducer } from "./reducer";
 import { loadState, saveState } from "./persistence";
 import { syncFromCloud } from "../lib/cloudSync";
-import { AppStateContext, AppDispatchContext } from "./context";
+import { AppStateContext, AppDispatchContext, AppLoadingContext } from "./context";
 
 // Load from localStorage once on startup (covers the signed-out case)
 const persistentState = loadState();
@@ -13,6 +13,7 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [state, dispatch] = useReducer(appReducer, persistentState);
+  const [isSyncing, setIsSyncing] = useState(true);
 
   // Keep a ref so the auth listener always reads the latest state,
   // not a stale closure from when the effect was registered.
@@ -21,12 +22,12 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
     stateRef.current = state;
   });
 
-  // Only persist to localStorage when the user is NOT signed in.
-  // When signed in, Firestore is the source of truth.
+  // Persist to localStorage on every state change.
+  // This keeps the local snapshot fresh so that on next page load,
+  // syncFromCloud doesn't treat stale local data as "new" and re-add
+  // meals/items the user deleted while signed in.
   useEffect(() => {
-    if (!auth.currentUser) {
-      saveState(state);
-    }
+    saveState(state);
   }, [state]);
 
   // Auto-sync from Firestore whenever auth state resolves to a signed-in user.
@@ -64,15 +65,18 @@ export const AppStateProvider: React.FC<{ children: React.ReactNode }> = ({
       } else {
         console.log("[AppStateContext] User signed out — skipping cloud sync.");
       }
+      setIsSyncing(false);
     });
     return unsubscribe;
   }, []);
 
   return (
-    <AppStateContext.Provider value={state}>
-      <AppDispatchContext.Provider value={dispatch}>
-        {children}
-      </AppDispatchContext.Provider>
-    </AppStateContext.Provider>
+    <AppLoadingContext.Provider value={isSyncing}>
+      <AppStateContext.Provider value={state}>
+        <AppDispatchContext.Provider value={dispatch}>
+          {children}
+        </AppDispatchContext.Provider>
+      </AppStateContext.Provider>
+    </AppLoadingContext.Provider>
   );
 };

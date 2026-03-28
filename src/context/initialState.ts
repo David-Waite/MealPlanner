@@ -12,7 +12,6 @@ const custom = (customUnitId: string): import("../types").UnitRef => ({
   customUnitId,
 });
 
-
 const MOCK_MEALS: Meal[] = [
   {
     id: "meal1",
@@ -258,36 +257,6 @@ const MOCK_MEALS: Meal[] = [
     tags: ["fish", "tuna", "salad", "lunch", "healthy"],
   },
   {
-    id: "meal8",
-    name: "Banana",
-    photoUrl: "/media/banana.jpg",
-    servings: 1,
-    ingredients: [
-      { ingredientId: "ing_banana", quantity: 1, unit: core("unit") },
-    ],
-    tags: ["fruit", "snack"],
-  },
-  {
-    id: "meal9",
-    name: "Apple",
-    photoUrl: "/media/apple.jpg",
-    servings: 1,
-    ingredients: [
-      { ingredientId: "ing_apple", quantity: 1, unit: core("unit") },
-    ],
-    tags: ["fruit", "snack"],
-  },
-  {
-    id: "meal10",
-    name: "Kiwi Fruit",
-    photoUrl: "/media/kiwi-fruit.jpg",
-    servings: 1,
-    ingredients: [
-      { ingredientId: "ing_kiwi", quantity: 1, unit: core("unit") },
-    ],
-    tags: ["fruit", "snack"],
-  },
-  {
     id: "meal11",
     name: "Coffee",
     photoUrl: "/media/coffee.jpg",
@@ -489,8 +458,8 @@ const MOCK_MEALS: Meal[] = [
 
 export const initialState: AppState = {
   meals: MOCK_MEALS,
-  ingredients: [],   // populated from globalIngredients + localIngredients on sign-in
-  customUnits: [],   // populated from ingredient docs on sign-in
+  ingredients: [], // populated from globalIngredients + localIngredients on sign-in
+  customUnits: [], // populated from ingredient docs on sign-in
   users: [
     { id: "u1", initials: "CA", color: "#4A90E2" },
     { id: "u2", initials: "DA", color: "#D0021B" },

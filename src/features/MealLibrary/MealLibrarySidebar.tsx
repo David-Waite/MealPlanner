@@ -12,6 +12,7 @@ import {
   bookmarkRecipe,
   firestoreRecipeToMeal,
   deleteRecipeFromCloud,
+  deleteLocalIngredient,
   loadGlobalSnacks,
   bookmarkSnack,
   saveFavourites,
@@ -33,7 +34,7 @@ const CATEGORY_GRADIENTS: Record<string, string> = {
 };
 
 export const MealLibrarySidebar: React.FC = () => {
-  const { meals, favourites } = useAppState();
+  const { meals, favourites, ingredients } = useAppState();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
 
@@ -117,6 +118,12 @@ export const MealLibrarySidebar: React.FC = () => {
   const [globalSnacks, setGlobalSnacks] = useState<GlobalIngredient[]>([]);
   const [globalSnacksLoading, setGlobalSnacksLoading] = useState(false);
   const [globalSnacksLoaded, setGlobalSnacksLoaded] = useState(false);
+
+  // ── Local (user-created) snacks ──
+  const localSnacks = useMemo(
+    () => ingredients.filter((i) => i.isSnack === true),
+    [ingredients]
+  );
 
   // ── Load friends' recipes once ──
   useEffect(() => {
@@ -240,22 +247,31 @@ export const MealLibrarySidebar: React.FC = () => {
     return map;
   }, [visibleFriendMeals]);
 
+  const visibleLocalSnacks = useMemo(() => {
+    const nonFavourited = localSnacks.filter((s) => !favouriteSnackIds.has(s.id));
+    if (!trimmedSnackSearch) return nonFavourited;
+    return nonFavourited.filter((s) => s.name.toLowerCase().includes(trimmedSnackSearch));
+  }, [localSnacks, trimmedSnackSearch, favouriteSnackIds]);
+
   const visibleSnacks = useMemo(() => {
-    const nonFavourited = globalSnacks.filter((s) => !favouriteSnackIds.has(s.id));
+    const localIds = new Set(localSnacks.map((s) => s.id));
+    const nonFavourited = globalSnacks.filter((s) => !favouriteSnackIds.has(s.id) && !localIds.has(s.id));
     if (!trimmedSnackSearch) return nonFavourited.slice(0, 12);
     return nonFavourited.filter((s) => s.name.toLowerCase().includes(trimmedSnackSearch));
-  }, [globalSnacks, trimmedSnackSearch, favouriteSnackIds]);
+  }, [globalSnacks, localSnacks, trimmedSnackSearch, favouriteSnackIds]);
 
   const searchResults = useMemo(() => {
     if (!isSearching) return null;
     const mealResults = [...meals, ...friendMeals].filter((m) =>
       m.name.toLowerCase().includes(trimmedSearch)
     );
-    const snackResults = globalSnacks.filter((s) =>
-      s.name.toLowerCase().includes(trimmedSearch)
-    );
+    const localIds = new Set(localSnacks.map((s) => s.id));
+    const snackResults = [
+      ...localSnacks.filter((s) => s.name.toLowerCase().includes(trimmedSearch)),
+      ...globalSnacks.filter((s) => !localIds.has(s.id) && s.name.toLowerCase().includes(trimmedSearch)),
+    ];
     return { meals: mealResults, snacks: snackResults };
-  }, [isSearching, trimmedSearch, meals, friendMeals, globalSnacks]);
+  }, [isSearching, trimmedSearch, meals, friendMeals, globalSnacks, localSnacks]);
 
   const favouriteMeals = useMemo(() =>
     favourites
@@ -268,9 +284,15 @@ export const MealLibrarySidebar: React.FC = () => {
   const favouriteSnacks = useMemo(() =>
     favourites
       .filter((f) => f.type === "snack")
-      .map((f) => globalSnacks.find((s) => s.id === f.id))
-      .filter((s): s is GlobalIngredient => s !== undefined),
-    [favourites, globalSnacks]
+      .map((f) => {
+        const local = localSnacks.find((s) => s.id === f.id);
+        if (local) return local;
+        const global = globalSnacks.find((s) => s.id === f.id);
+        if (global) return { ...global, photoUrl: global.photoUrl ?? undefined };
+        return undefined;
+      })
+      .filter((s): s is Ingredient => s !== undefined),
+    [favourites, globalSnacks, localSnacks]
   );
 
   // ── Handlers ──
@@ -288,6 +310,13 @@ export const MealLibrarySidebar: React.FC = () => {
     if (window.confirm("Are you sure you want to delete this meal?")) {
       dispatch({ type: "DELETE_MEAL", payload: { mealId } });
       if (user) deleteRecipeFromCloud(user.uid, mealId).catch(console.error);
+    }
+  };
+
+  const handleDeleteSnack = (ingredientId: string) => {
+    if (window.confirm("Delete this snack?")) {
+      dispatch({ type: "DELETE_INGREDIENT", payload: { ingredientId } });
+      if (user) deleteLocalIngredient(user.uid, ingredientId).catch(console.error);
     }
   };
 
@@ -386,14 +415,32 @@ export const MealLibrarySidebar: React.FC = () => {
 
               {/* Tags — only relevant when meals are visible in library */}
               {!isSearching && libShowMeals && allTags.length > 0 && (
-                <div className={styles.headerFilters}>
-                  <button
-                    className={`${styles.filterToggle} ${showTagFilter ? styles.filterToggleActive : ""}`}
-                    onClick={() => setShowTagFilter((v) => !v)}
-                  >
-                    Tags{selectedTags.length > 0 ? ` (${selectedTags.length})` : ""}
-                  </button>
-                </div>
+                <>
+                  <div className={styles.headerFilters}>
+                    <button
+                      className={`${styles.filterToggle} ${showTagFilter ? styles.filterToggleActive : ""}`}
+                      onClick={() => setShowTagFilter((v) => !v)}
+                    >
+                      Tags{selectedTags.length > 0 ? ` (${selectedTags.length})` : ""}
+                    </button>
+                  </div>
+                  {showTagFilter && (
+                    <div className={styles.tagFilters}>
+                      {allTags.map((tag) => (
+                        <button
+                          key={tag}
+                          className={`${styles.tagFilter} ${selectedTags.includes(tag) ? styles.tagFilterActive : ""}`}
+                          onClick={() => toggleTag(tag)}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                      {selectedTags.length > 0 && (
+                        <button className={styles.clearTagsBtn} onClick={() => setSelectedTags([])}>Clear</button>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
@@ -730,7 +777,8 @@ export const MealLibrarySidebar: React.FC = () => {
                             isFavourited={true}
                             onFavourite={() => handleToggleFavourite(snack.id, "snack")}
                             onDragStart={handleDragStartSnack}
-                            onEdit={() => { setEditingSnack(snack as unknown as Ingredient); setIsSnackModalOpen(true); }}
+                            onEdit={() => { setEditingSnack(snack); setIsSnackModalOpen(true); }}
+                            onDelete={snack.source === "local" ? () => handleDeleteSnack(snack.id) : undefined}
                           />
                         ))}
                       </div>
@@ -771,24 +819,6 @@ export const MealLibrarySidebar: React.FC = () => {
                         + New
                       </button>
                     </div>
-
-                    {/* Tag filter */}
-                    {showTagFilter && allTags.length > 0 && (
-                      <div className={styles.tagFilters}>
-                        {allTags.map((tag) => (
-                          <button
-                            key={tag}
-                            className={`${styles.tagFilter} ${selectedTags.includes(tag) ? styles.tagFilterActive : ""}`}
-                            onClick={() => toggleTag(tag)}
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                        {selectedTags.length > 0 && (
-                          <button className={styles.clearTagsBtn} onClick={() => setSelectedTags([])}>Clear</button>
-                        )}
-                      </div>
-                    )}
 
                     <div className={styles.cardList}>
                       {visibleMeals.map((meal) => (
@@ -835,9 +865,25 @@ export const MealLibrarySidebar: React.FC = () => {
                       />
                     </div>
 
+                    {visibleLocalSnacks.length > 0 && (
+                      <div className={styles.snackList}>
+                        {visibleLocalSnacks.map((snack) => (
+                          <SnackPoolItem
+                            key={snack.id}
+                            snack={snack}
+                            isFavourited={isSnackFavourited(snack.id)}
+                            onFavourite={() => handleToggleFavourite(snack.id, "snack")}
+                            onDragStart={handleDragStartSnack}
+                            onEdit={() => { setEditingSnack(snack); setIsSnackModalOpen(true); }}
+                            onDelete={() => handleDeleteSnack(snack.id)}
+                          />
+                        ))}
+                      </div>
+                    )}
+
                     {globalSnacksLoading && <p className={styles.emptyMsg}>Loading snacks…</p>}
 
-                    {!globalSnacksLoading && visibleSnacks.length === 0 && trimmedSnackSearch && (
+                    {!globalSnacksLoading && visibleSnacks.length === 0 && visibleLocalSnacks.length === 0 && trimmedSnackSearch && (
                       <div className={styles.snackNoResults}>
                         <p className={styles.emptyMsg}>Nothing found for "{snackSearch}"</p>
                         <button
@@ -858,7 +904,6 @@ export const MealLibrarySidebar: React.FC = () => {
                             isFavourited={isSnackFavourited(snack.id)}
                             onFavourite={() => handleToggleFavourite(snack.id, "snack")}
                             onDragStart={handleDragStartSnack}
-                            onEdit={() => { setEditingSnack(snack as unknown as Ingredient); setIsSnackModalOpen(true); }}
                           />
                         ))}
                       </div>
@@ -900,14 +945,15 @@ export const MealLibrarySidebar: React.FC = () => {
 
 // ── Snack pool item ──────────────────────────────────────────
 interface SnackPoolItemProps {
-  snack: GlobalIngredient;
+  snack: { id: string; name: string; category: Ingredient["category"]; photoUrl?: string | null };
   isFavourited: boolean;
   onFavourite: () => void;
   onDragStart: (e: React.DragEvent, id: string) => void;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-const SnackPoolItem: React.FC<SnackPoolItemProps> = ({ snack, isFavourited, onFavourite, onDragStart, onEdit }) => {
+const SnackPoolItem: React.FC<SnackPoolItemProps> = ({ snack, isFavourited, onFavourite, onDragStart, onEdit, onDelete }) => {
   const gradient = CATEGORY_GRADIENTS[snack.category] ?? CATEGORY_GRADIENTS["Other"];
   const initial = snack.name.trim()[0]?.toUpperCase() ?? "?";
 
@@ -932,6 +978,16 @@ const SnackPoolItem: React.FC<SnackPoolItemProps> = ({ snack, isFavourited, onFa
           title="Edit snack"
         >
           ✎
+        </button>
+      )}
+      {onDelete && (
+        <button
+          className={styles.snackDeleteBtn}
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          draggable="false"
+          title="Delete snack"
+        >
+          ×
         </button>
       )}
       <button

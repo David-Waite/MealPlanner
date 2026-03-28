@@ -17,7 +17,7 @@ export interface FirestoreUser {
 
 export const userConverter: FirestoreDataConverter<FirestoreUser> = {
   toFirestore(user: FirestoreUser): DocumentData {
-    const { uid, ...data } = user;
+    const { uid: _uid, ...data } = user;
     return data;
   },
   fromFirestore(
@@ -51,7 +51,7 @@ export interface FirestorePlannedMeal {
 
 export const plannedMealConverter: FirestoreDataConverter<FirestorePlannedMeal> = {
   toFirestore(meal: FirestorePlannedMeal): DocumentData {
-    const { instanceId, ...data } = meal;
+    const { instanceId: _instanceId, ...data } = meal;
     return data;
   },
   fromFirestore(
@@ -103,7 +103,7 @@ export interface FirestoreRecipe {
 
 export const recipeConverter: FirestoreDataConverter<FirestoreRecipe> = {
   toFirestore(recipe: FirestoreRecipe): DocumentData {
-    const { id, ...data } = recipe;
+    const { id: _id, ...data } = recipe;
     return data;
   },
   fromFirestore(
@@ -176,7 +176,7 @@ export interface FirestoreShoppingList {
 export const shoppingListConverter: FirestoreDataConverter<FirestoreShoppingList> =
   {
     toFirestore(list: FirestoreShoppingList): DocumentData {
-      const { id, ...data } = list;
+      const { id: _id, ...data } = list;
       return data;
     },
     fromFirestore(
@@ -218,7 +218,7 @@ export interface FirestoreFriendship {
 export const friendshipConverter: FirestoreDataConverter<FirestoreFriendship> =
   {
     toFirestore(friendship: FirestoreFriendship): DocumentData {
-      const { id, ...data } = friendship;
+      const { id: _id, ...data } = friendship;
       return data;
     },
     fromFirestore(
@@ -257,7 +257,7 @@ export interface GlobalIngredient {
 
 export const globalIngredientConverter: FirestoreDataConverter<GlobalIngredient> = {
   toFirestore(ingredient: GlobalIngredient): DocumentData {
-    const { id, ...data } = ingredient;
+    const { id: _id, ...data } = ingredient;
     return data;
   },
   fromFirestore(
@@ -295,7 +295,7 @@ export interface FirestorePlannedSnack {
 
 export const plannedSnackConverter: FirestoreDataConverter<FirestorePlannedSnack> = {
   toFirestore(snack: FirestorePlannedSnack): DocumentData {
-    const { instanceId, ...data } = snack;
+    const { instanceId: _instanceId, ...data } = snack;
     return data;
   },
   fromFirestore(

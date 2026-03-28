@@ -1,12 +1,6 @@
 import { useContext } from "react";
-import { AppStateContext, AppDispatchContext } from "./context";
+import { AppStateContext, AppDispatchContext, AppLoadingContext } from "./context";
 
-// This hook is for accessing the state
-export const useAppState = () => {
-  return useContext(AppStateContext);
-};
-
-// This hook is for dispatching actions
-export const useAppDispatch = () => {
-  return useContext(AppDispatchContext);
-};
+export const useAppState = () => useContext(AppStateContext);
+export const useAppDispatch = () => useContext(AppDispatchContext);
+export const useAppLoading = () => useContext(AppLoadingContext);

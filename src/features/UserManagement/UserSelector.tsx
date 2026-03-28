@@ -119,6 +119,12 @@ export const UserSelector: React.FC = () => {
     if (users.length <= 1) return;
     const userId = popover.editingUser.id;
     dispatch({ type: "DELETE_USER", payload: { userId } });
+    // If the deleted user was the only selected one, select the first remaining user
+    const remainingSelected = selectedUserIds.filter((id) => id !== userId);
+    if (remainingSelected.length === 0) {
+      const fallback = users.find((u) => u.id !== userId);
+      if (fallback) dispatch({ type: "SET_SELECTED_USERS", payload: [fallback.id] });
+    }
     if (user) {
       saveHouseholdUsers(user.uid, users.filter((u) => u.id !== userId)).catch(console.error);
     }
@@ -176,7 +182,7 @@ export const UserSelector: React.FC = () => {
               value={nameValue}
               onChange={(e) => setNameValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") isAdd ? handleAddUser() : handleSaveEdit();
+                if (e.key === "Enter") { if (isAdd) handleAddUser(); else handleSaveEdit(); }
                 if (e.key === "Escape") setPopover(null);
               }}
               maxLength={30}

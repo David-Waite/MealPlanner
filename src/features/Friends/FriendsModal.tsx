@@ -85,7 +85,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({ isOpen, onClose }) =
       });
       setProfiles((prev) => ({ ...prev, ...newProfiles }));
     });
-  }, [friendships, user]);
+  }, [friendships, user, profiles]);
 
   // Reset search when modal closes
   useEffect(() => {
