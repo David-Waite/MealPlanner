@@ -1,6 +1,6 @@
 import { Timestamp, QueryDocumentSnapshot } from "firebase/firestore";
 import type { FirestoreDataConverter, SnapshotOptions, DocumentData } from "firebase/firestore";
-import type { RecipeIngredient, CustomUnit, UnitRef, IngredientCategory, GlobalStatus } from "../types";
+import type { RecipeIngredient, RecipeStep, CustomUnit, UnitRef, IngredientCategory, GlobalStatus } from "../types";
 
 // ---------------------------------------------------------------------------
 // User document  (users/{userId})
@@ -85,6 +85,7 @@ export interface FirestoreRecipe {
   servings: number;
   description: string | null;      // required for global submission
   instructions: string[];          // ordered steps; required for global
+  steps?: RecipeStep[];            // rich steps with per-step ingredient allocations
   photoUrl: string | null;         // Firebase Storage URL; required for global
   tags: string[];                  // required for global
   ingredients: RecipeIngredient[];
@@ -117,6 +118,7 @@ export const recipeConverter: FirestoreDataConverter<FirestoreRecipe> = {
       servings: data.servings ?? 1,
       description: data.description ?? null,
       instructions: data.instructions ?? [],
+      steps: data.steps ?? undefined,
       photoUrl: data.photoUrl ?? null,
       tags: data.tags ?? [],
       ingredients: data.ingredients ?? [],

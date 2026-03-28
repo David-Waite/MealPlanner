@@ -68,6 +68,17 @@ export interface RecipeIngredient {
   unit: UnitRef;
 }
 
+export interface RecipeStepIngredient {
+  ingredientId: string;
+  quantity: number;
+  unit: UnitRef;
+}
+
+export interface RecipeStep {
+  text: string;
+  stepIngredients: RecipeStepIngredient[];
+}
+
 export type GlobalStatus = "none" | "pending" | "approved" | "rejected" | "pending_update";
 export type RecipeVisibility = "private" | "friends" | "global";
 
@@ -80,6 +91,7 @@ export interface Meal {
   tags: string[];
   description?: string;
   instructions?: string[];
+  steps?: RecipeStep[];
   globalStatus?: GlobalStatus;
   visibility?: RecipeVisibility;
   bookmarkedFromId?: string | null;

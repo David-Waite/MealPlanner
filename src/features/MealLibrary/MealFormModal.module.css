@@ -666,3 +666,478 @@
 .comboboxCreateTitle { font-size: 0.72rem; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.07em; }
 .comboboxPerishable { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer; }
 .comboboxCreateActions { display: flex; gap: 8px; }
+
+/* ==========================================================================
+   Recipe tab — remaining pills + step ingredient allocation
+   ========================================================================== */
+
+/* ── Remaining ingredient pills bar ── */
+
+.remainingBar {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1.5px solid rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.remainingBarLabel {
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #a0aec0;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.remainingPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.remainingPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: opacity 120ms ease, box-shadow 120ms ease;
+  font-family: inherit;
+}
+.remainingPill:hover { box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.15); }
+
+.remainingPill_partial {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+.remainingPill_partial:hover { background: #fde68a; }
+
+.remainingPill_done {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+  cursor: default;
+}
+.remainingPill_done:hover { box-shadow: none; }
+
+.remainingPill_over {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+.remainingPill_over:hover { background: #fca5a5; }
+
+.remainingQty { opacity: 0.85; }
+.remainingCheck { opacity: 0.7; }
+.remainingOver { font-weight: 800; }
+
+/* ── Recipe step rows ── */
+
+.recipeStepRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  padding: 10px 10px 8px;
+  transition: border-color 150ms ease;
+  position: relative;
+}
+
+.recipeStepRow:focus-within,
+.recipeStepActive {
+  border-color: rgba(76, 81, 191, 0.35);
+  box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.06);
+}
+
+.stepContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stepTextRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.stepTextWrap {
+  flex: 1;
+  position: relative;
+}
+
+.stepTextarea {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 52px;
+  background: #f8f9fc;
+  color: var(--color-text-primary);
+  box-sizing: border-box;
+  transition: border-color 150ms ease, background 150ms ease;
+  line-height: 1.5;
+}
+.stepTextarea:focus { outline: none; border-color: #4c51bf; background: #fff; }
+.stepTextarea::placeholder { color: #c0c8d8; font-size: 0.82rem; }
+
+/* @mention autocomplete dropdown */
+.atMentionDropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid rgba(76, 81, 191, 0.2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.atMentionOption {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.84rem;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  transition: background 100ms ease;
+}
+.atMentionOption:hover { background: #eef2ff; color: #4c51bf; }
+
+.atMentionEmpty {
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  color: #a0aec0;
+  font-style: italic;
+}
+
+/* ── Step ingredient chips ── */
+
+.stepIngredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.stepIngChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px 2px 10px;
+  border-radius: 99px;
+  background: rgba(76, 81, 191, 0.1);
+  color: #4c51bf;
+  font-size: 0.73rem;
+  font-weight: 600;
+  border: 1px solid rgba(76, 81, 191, 0.2);
+}
+
+.chipRemove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #4c51bf;
+  font-size: 0.9rem;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 100ms ease;
+}
+.chipRemove:hover { opacity: 1; }
+
+/* ── Add ingredient link ── */
+
+.stepAddIngBtn {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4c51bf;
+  padding: 2px 4px;
+  font-family: inherit;
+  opacity: 0.7;
+  transition: opacity 120ms ease;
+}
+.stepAddIngBtn:hover { opacity: 1; text-decoration: underline; }
+
+/* ── Inline ingredient picker ── */
+
+.stepPicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: #f0f4ff;
+  border: 1.5px solid rgba(76, 81, 191, 0.2);
+  border-radius: 9px;
+}
+
+.stepPickerSearchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 140px;
+}
+
+.stepPickerInput {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 7px;
+  font-size: 0.84rem;
+  font-family: inherit;
+  background: #fff;
+  box-sizing: border-box;
+}
+.stepPickerInput:focus { outline: none; border-color: #4c51bf; }
+
+.stepPickerDropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.stepPickerOption {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-family: inherit;
+  color: var(--color-text-primary);
+}
+.stepPickerOption:hover { background: #eef2ff; color: #4c51bf; }
+
+.stepPickerQty {
+  width: 72px;
+  flex-shrink: 0;
+  padding: 6px 8px;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 7px;
+  font-size: 0.84rem;
+  font-family: inherit;
+  text-align: center;
+  background: #fff;
+}
+.stepPickerQty:focus { outline: none; border-color: #4c51bf; }
+
+.stepPickerUnit {
+  flex-shrink: 0;
+}
+
+.stepPickerAdd {
+  padding: 6px 14px;
+  border-radius: 7px;
+  border: none;
+  background: #4c51bf;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms ease;
+  flex-shrink: 0;
+}
+.stepPickerAdd:hover:not(:disabled) { background: #434190; }
+.stepPickerAdd:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Update ingredients notice ── */
+
+.updateIngredientsBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.updateIngredientsNote {
+  font-size: 0.8rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.updateIngredientsBtn {
+  padding: 5px 14px;
+  border-radius: 7px;
+  border: 1.5px solid #f59e0b;
+  background: #fff;
+  color: #92400e;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 120ms ease;
+  flex-shrink: 0;
+}
+.updateIngredientsBtn:hover { background: #fef3c7; }
+
+/* ── Rich step editor ── */
+
+.stepEditor {
+  flex: 1;
+  min-height: 52px;
+  padding: 7px 10px;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: #f8f9fc;
+  color: var(--color-text-primary);
+  box-sizing: border-box;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  transition: border-color 150ms ease, background 150ms ease;
+  outline: none;
+}
+.stepEditor:focus { border-color: #4c51bf; background: #fff; }
+.stepEditor:empty::before {
+  content: attr(data-placeholder);
+  color: #c0c8d8;
+  font-size: 0.82rem;
+  pointer-events: none;
+}
+
+/* Keyboard-focused dropdown option */
+.atMentionOptionFocused {
+  background: #eef2ff;
+  color: #4c51bf;
+}
+
+/* ── Inline ingredient chips (inside contenteditable) ── */
+
+.inlineIngChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px 1px 8px;
+  border-radius: 99px;
+  background: rgba(76, 81, 191, 0.12);
+  color: #4c51bf;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid rgba(76, 81, 191, 0.25);
+  vertical-align: middle;
+  line-height: 1.5;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.inlineChipRemove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #4c51bf;
+  font-size: 0.85rem;
+  padding: 0 0 0 2px;
+  line-height: 1;
+  opacity: 0.55;
+  transition: opacity 100ms ease;
+  font-family: inherit;
+}
+.inlineChipRemove:hover { opacity: 1; }
+
+/* ── Pending ingredient inline form ── */
+
+.pendingIngSpan {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.pendingIngForm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(76, 81, 191, 0.08);
+  border: 1.5px solid rgba(76, 81, 191, 0.3);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.pendingIngName {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #4c51bf;
+}
+
+.pendingIngQty {
+  width: 56px;
+  padding: 2px 5px;
+  border: 1px solid rgba(76, 81, 191, 0.3);
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  text-align: center;
+  background: #fff;
+}
+.pendingIngQty:focus { outline: none; border-color: #4c51bf; }
+
+.pendingIngUnit {
+  font-size: 0.78rem;
+  font-family: inherit;
+  border: 1px solid rgba(76, 81, 191, 0.3);
+  border-radius: 5px;
+  padding: 2px 4px;
+  background: #fff;
+  max-width: 90px;
+}
+.pendingIngUnit:focus { outline: none; border-color: #4c51bf; }
+
+.pendingIngConfirm,
+.pendingIngCancel {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 2px;
+  line-height: 1;
+  font-family: inherit;
+  transition: opacity 100ms ease;
+}
+.pendingIngConfirm { color: #38a169; }
+.pendingIngConfirm:hover { opacity: 0.75; }
+.pendingIngCancel { color: #e53e3e; }
+.pendingIngCancel:hover { opacity: 0.75; }

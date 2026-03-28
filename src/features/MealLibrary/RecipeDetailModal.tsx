@@ -101,22 +101,38 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
             </section>
           )}
 
-          {meal.instructions && meal.instructions.length > 0 && (
+          {(meal.steps?.length || meal.instructions?.length) ? (
             <section className={styles.section}>
               <h3 className={styles.sectionTitle}>Instructions</h3>
               <ol className={styles.instructionList}>
-                {meal.instructions.map((step, idx) => (
+                {(meal.steps?.length ? meal.steps : (meal.instructions ?? []).map(t => ({ text: t, stepIngredients: [] }))).map((step, idx) => (
                   <li key={idx} className={styles.instructionItem}>
                     <span className={styles.stepNumber}>{idx + 1}</span>
-                    <span className={styles.stepText}>{step}</span>
+                    <div style={{ flex: 1 }}>
+                      <span className={styles.stepText}>{typeof step === "string" ? step : step.text}</span>
+                      {typeof step !== "string" && step.stepIngredients?.length > 0 && (
+                        <div className={styles.stepIngredientList}>
+                          {step.stepIngredients.map((si, siIdx) => {
+                            const ingName = ingredients.find(i => i.id === si.ingredientId)?.name ?? si.ingredientId;
+                            const unitLabel = si.unit.type === "core" ? si.unit.unit : customUnits.find(cu => cu.id === si.unit.customUnitId)?.label ?? "unit";
+                            return (
+                              <span key={siIdx} className={styles.stepIngPill}>
+                                {formatQuantity(si.quantity)} {unitLabel} {ingName}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ol>
             </section>
-          )}
+          ) : null}
 
           {(!meal.ingredients || meal.ingredients.length === 0) &&
-           (!meal.instructions || meal.instructions.length === 0) && (
+           (!meal.instructions || meal.instructions.length === 0) &&
+           (!meal.steps || meal.steps.length === 0) && (
             <p className={styles.emptyBody}>No details added yet.</p>
           )}
         </div>

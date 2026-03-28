@@ -7,6 +7,8 @@ import type { FirestoreFriendship } from "../../lib/firestoreTypes";
 import type {
   Meal,
   RecipeIngredient,
+  RecipeStep,
+  RecipeStepIngredient,
   UnitRef,
   CoreUnit,
   MetricUnit,
@@ -22,6 +24,7 @@ import { useAppState, useAppDispatch } from "../../context/hooks";
 import { useAuth } from "../../context/AuthContext";
 import { submitGlobalRecipe, saveRecipeToCloud, suggestRecipeUpdate } from "../../lib/cloudSync";
 import { IngredientCombobox } from "./IngredientCombobox";
+import StepRichEditor, { type StepEditorHandle, type InlineStepIngredient } from "./StepRichEditor";
 import { Button } from "../../components/Button/Button";
 import { Input } from "../../components/Form/Input";
 import { Select } from "../../components/Form/Select";
@@ -38,10 +41,14 @@ type FormIngredient = Omit<RecipeIngredient, "ingredientId"> & {
   ingredientId: string | null;
 };
 
-type DesktopTab = "ingredients" | "instructions" | "tags" | "sharing";
+type DesktopTab = "ingredients" | "recipe" | "tags" | "sharing";
 
-const MOBILE_STEPS = ["Details", "Ingredients", "Instructions", "Tags", "Sharing"] as const;
+const MOBILE_STEPS = ["Details", "Ingredients", "Recipe", "Tags", "Sharing"] as const;
 type MobileStepIndex = 0 | 1 | 2 | 3 | 4;
+
+// ── Recipe step form types ──────────────────────────────────────────────────
+type FormStepIngredient = RecipeStepIngredient & { tempId: string };
+type FormRecipeStep = { text: string; stepIngredients: FormStepIngredient[] };
 
 const CREATE_CUSTOM_SENTINEL = "__create_custom__";
 
@@ -61,7 +68,6 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
   const [name, setName] = useState("");
   const [servings, setServings] = useState(1);
   const [description, setDescription] = useState("");
-  const [instructions, setInstructions] = useState<string[]>([""]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [formIngredients, setFormIngredients] = useState<FormIngredient[]>([]);
   const [sharedWith, setSharedWith] = useState<string[]>([]);
@@ -74,6 +80,12 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // Recipe steps
+  const [steps, setSteps] = useState<FormRecipeStep[]>([{ text: "", stepIngredients: [] }]);
+  const [activeStepIdx, setActiveStepIdx] = useState<number | null>(null);
+  const [formKey, setFormKey] = useState(0);
+  const stepEditorRefs = useRef<(StepEditorHandle | null)[]>([]);
 
   // UI
   const [desktopTab, setDesktopTab] = useState<DesktopTab>("ingredients");
@@ -96,19 +108,30 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
       setPhotoUrl(initialData.photoUrl || "");
       setPhotoPreview(initialData.photoUrl || "");
       setDescription(initialData.description ?? "");
-      setInstructions(initialData.instructions?.length ? initialData.instructions : [""]);
+      if (initialData.steps?.length) {
+        setSteps(initialData.steps.map(s => ({
+          text: s.text,
+          stepIngredients: s.stepIngredients.map(si => ({ ...si, tempId: crypto.randomUUID() })),
+        })));
+      } else if (initialData.instructions?.length) {
+        setSteps(initialData.instructions.map(text => ({ text, stepIngredients: [] })));
+      } else {
+        setSteps([{ text: "", stepIngredients: [] }]);
+      }
       setSelectedTags(initialData.tags ?? []);
       setFormIngredients(initialData.ingredients.map((ing) => ({ ...ing, tempId: crypto.randomUUID() })));
       setSharedWith(initialData.sharedWith || []);
     } else {
       setName(""); setServings(1); setPhotoUrl(""); setPhotoPreview("");
-      setDescription(""); setInstructions([""]); setSelectedTags([]);
+      setDescription(""); setSteps([{ text: "", stepIngredients: [] }]); setSelectedTags([]);
       setFormIngredients([]); setSharedWith([]);
     }
     setPhotoFile(null); setUploadProgress(null);
     setDesktopTab("ingredients"); setMobileStep(0);
     setCreatingForTempId(null); setDraft(defaultDraft());
     setGlobalErrors([]);
+    setActiveStepIdx(null);
+    setFormKey(k => k + 1);
   }, [initialData, isOpen]);
 
   // ── Load friends ───────────────────────────────────────────────────────────
@@ -195,18 +218,52 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
 
   const getUnitSelectValue = (unit: UnitRef) => unit.type === "core" ? unit.unit : unit.customUnitId;
 
-  // ── Instruction handlers ───────────────────────────────────────────────────
+  // ── Recipe step handlers ───────────────────────────────────────────────────
 
-  const updateInstruction = (idx: number, val: string) =>
-    setInstructions((p) => p.map((s, i) => i === idx ? val : s));
-  const addInstruction = () => setInstructions((p) => [...p, ""]);
-  const removeInstruction = (idx: number) => setInstructions((p) => p.filter((_, i) => i !== idx));
-  const moveInstruction = (idx: number, dir: -1 | 1) =>
-    setInstructions((p) => {
+  // Called by StepRichEditor when text or inline ingredient chips change
+  const updateStepContent = (idx: number, text: string, sis: InlineStepIngredient[]) =>
+    setSteps(p => p.map((s, i) => i === idx ? { ...s, text, stepIngredients: sis } : s));
+  const addStep = () => setSteps(p => [...p, { text: "", stepIngredients: [] }]);
+  const removeStep = (idx: number) => {
+    setSteps(p => p.filter((_, i) => i !== idx));
+    if (activeStepIdx === idx) setActiveStepIdx(null);
+  };
+  const moveStep = (idx: number, dir: -1 | 1) =>
+    setSteps(p => {
       const n = [...p]; const t = idx + dir;
       if (t < 0 || t >= n.length) return p;
       [n[idx], n[t]] = [n[t], n[idx]]; return n;
     });
+
+  const handlePillClick = (ingredientId: string) => {
+    const targetIdx = activeStepIdx !== null ? activeStepIdx : steps.length - 1;
+    const masterIng = formIngredients.find(i => i.ingredientId === ingredientId);
+    if (!masterIng) return;
+    const totalUsed = steps.flatMap(s => s.stepIngredients)
+      .filter(si => si.ingredientId === ingredientId)
+      .reduce((sum, si) => sum + si.quantity, 0);
+    const remaining = masterIng.quantity - totalUsed;
+    stepEditorRefs.current[targetIdx]?.insertIngredient(
+      ingredientId,
+      remaining > 0.001 ? remaining : 1,
+      masterIng.unit,
+    );
+  };
+
+  const handleUpdateIngredients = () => {
+    const stepTotals: Record<string, { quantity: number; unit: UnitRef }> = {};
+    for (const step of steps) {
+      for (const si of step.stepIngredients) {
+        if (!stepTotals[si.ingredientId]) stepTotals[si.ingredientId] = { quantity: 0, unit: si.unit };
+        stepTotals[si.ingredientId].quantity += si.quantity;
+      }
+    }
+    setFormIngredients(prev => prev.map(ing => {
+      if (!ing.ingredientId || !stepTotals[ing.ingredientId]) return ing;
+      const t = stepTotals[ing.ingredientId];
+      return { ...ing, quantity: t.quantity, unit: t.unit };
+    }));
+  };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
@@ -222,10 +279,14 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
       }
       const recipeId = initialData?.id ?? crypto.randomUUID();
       const finalPhotoUrl = photoFile && user ? await uploadPhoto(user.uid, recipeId) : photoUrl;
-      const cleanedInstructions = instructions.filter((s) => s.trim());
+      const cleanedSteps: RecipeStep[] = steps
+        .filter(s => s.text.trim() || s.stepIngredients.length > 0)
+        .map(s => ({ text: s.text, stepIngredients: s.stepIngredients.map(({ tempId: _t, ...rest }) => rest) }));
+      const cleanedInstructions = cleanedSteps.map(s => s.text).filter(s => s.trim());
       const mealPayload: Meal = {
         id: recipeId, name: name.trim(), servings, photoUrl: finalPhotoUrl,
         description: description.trim() || undefined,
+        steps: cleanedSteps.length ? cleanedSteps : undefined,
         instructions: cleanedInstructions.length ? cleanedInstructions : undefined,
         ingredients: finalIngredients, tags: selectedTags, sharedWith,
         localUpdatedAt: Date.now(),
@@ -404,27 +465,107 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
     </div>
   );
 
-  const renderInstructions = () => (
-    <div className={styles.tabPanel}>
-      <div className={styles.instructionList}>
-        {instructions.map((step, idx) => (
-          <div key={idx} className={styles.instructionRow}>
-            <span className={styles.stepBadge}>{idx + 1}</span>
-            <Input value={step} onChange={(e) => updateInstruction(idx, e.target.value)} placeholder={`Step ${idx + 1}…`} className={styles.stepInput} />
-            <div className={styles.stepActions}>
-              <button type="button" className={styles.stepBtn} onClick={() => moveInstruction(idx, -1)} disabled={idx === 0} title="Move up">↑</button>
-              <button type="button" className={styles.stepBtn} onClick={() => moveInstruction(idx, 1)} disabled={idx === instructions.length - 1} title="Move down">↓</button>
-              <button type="button" className={`${styles.stepBtn} ${styles.stepBtnDanger}`} onClick={() => removeInstruction(idx)} disabled={instructions.length === 1} title="Remove">×</button>
+  const renderRecipe = () => {
+    // Compute remaining amounts per ingredient
+    const remainingMap: Record<string, number> = {};
+    for (const ing of formIngredients) {
+      if (ing.ingredientId) remainingMap[ing.ingredientId] = ing.quantity;
+    }
+    for (const step of steps) {
+      for (const si of step.stepIngredients) {
+        remainingMap[si.ingredientId] = (remainingMap[si.ingredientId] ?? 0) - si.quantity;
+      }
+    }
+
+    const hasAnyAllocation = steps.some(s => s.stepIngredients.length > 0);
+    const allFullyAllocated = formIngredients
+      .filter(i => i.ingredientId)
+      .every(i => Math.abs(remainingMap[i.ingredientId!] ?? i.quantity) < 0.001);
+
+    const recipeIngredients = formIngredients.filter(i => i.ingredientId);
+
+    return (
+      <div className={styles.tabPanel}>
+
+        {/* ── Remaining ingredient pills ── */}
+        {recipeIngredients.length > 0 && (
+          <div className={styles.remainingBar}>
+            <span className={styles.remainingBarLabel}>Remaining:</span>
+            <div className={styles.remainingPills}>
+              {recipeIngredients.map(ing => {
+                const remaining = remainingMap[ing.ingredientId!] ?? ing.quantity;
+                const ingName = allIngredients.find(i => i.id === ing.ingredientId)?.name ?? ing.ingredientId!;
+                const unitLabel = ing.unit.type === "core" ? ing.unit.unit : customUnits.find(cu => cu.id === ing.unit.customUnitId)?.label ?? "unit";
+                const status = remaining < -0.001 ? "over" : remaining < 0.001 ? "done" : "partial";
+                return (
+                  <button
+                    key={ing.ingredientId}
+                    type="button"
+                    className={`${styles.remainingPill} ${styles[`remainingPill_${status}`]}`}
+                    onClick={() => handlePillClick(ing.ingredientId!)}
+                    title={status === "done" ? "Fully allocated" : `Click to add to active step`}
+                  >
+                    {status !== "done" && <span className={styles.remainingQty}>{remaining > 0 ? `${parseFloat(remaining.toFixed(3))} ${unitLabel} ` : ""}</span>}
+                    {ingName}
+                    {status === "over" && <span className={styles.remainingOver}> ↑</span>}
+                    {status === "done" && <span className={styles.remainingCheck}> ✓</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        ))}
+        )}
+
+        {/* ── Steps ── */}
+        <div className={styles.instructionList}>
+          {steps.map((step, idx) => (
+            <div
+              key={idx}
+              className={`${styles.recipeStepRow} ${activeStepIdx === idx ? styles.recipeStepActive : ""}`}
+            >
+              <span className={styles.stepBadge}>{idx + 1}</span>
+              <div className={styles.stepContent}>
+                <div className={styles.stepTextRow}>
+                  <StepRichEditor
+                    key={`${formKey}-${idx}`}
+                    ref={el => { stepEditorRefs.current[idx] = el; }}
+                    text={step.text}
+                    stepIngredients={step.stepIngredients}
+                    placeholder={`Step ${idx + 1}… (type @ to link an ingredient)`}
+                    allIngredients={allIngredients}
+                    recipeIngredients={recipeIngredients}
+                    customUnits={customUnits}
+                    onFocus={() => setActiveStepIdx(idx)}
+                    onChange={(t, sis) => updateStepContent(idx, t, sis)}
+                  />
+                  <div className={styles.stepActions}>
+                    <button type="button" className={styles.stepBtn} onClick={() => moveStep(idx, -1)} disabled={idx === 0} title="Move up">↑</button>
+                    <button type="button" className={styles.stepBtn} onClick={() => moveStep(idx, 1)} disabled={idx === steps.length - 1} title="Move down">↓</button>
+                    <button type="button" className={`${styles.stepBtn} ${styles.stepBtnDanger}`} onClick={() => removeStep(idx)} disabled={steps.length === 1} title="Remove">×</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button type="button" className={styles.addRowBtn} onClick={addStep}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Step
+        </button>
+
+        {/* Update ingredients notice */}
+        {hasAnyAllocation && !allFullyAllocated && (
+          <div className={styles.updateIngredientsBar}>
+            <span className={styles.updateIngredientsNote}>Step totals differ from the ingredient list</span>
+            <button type="button" className={styles.updateIngredientsBtn} onClick={handleUpdateIngredients}>
+              Update ingredient list
+            </button>
+          </div>
+        )}
       </div>
-      <button type="button" className={styles.addRowBtn} onClick={addInstruction}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add Step
-      </button>
-    </div>
-  );
+    );
+  };
 
   const renderTags = () => (
     <div className={styles.tabPanel}>
@@ -525,7 +666,7 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
 
   const desktopTabs: { id: DesktopTab; label: string; count?: number }[] = [
     { id: "ingredients", label: "Ingredients", count: formIngredients.length || undefined },
-    { id: "instructions", label: "Instructions", count: instructions.filter((s) => s.trim()).length || undefined },
+    { id: "recipe", label: "Recipe", count: steps.filter(s => s.text.trim() || s.stepIngredients.length > 0).length || undefined },
     { id: "tags", label: "Tags", count: selectedTags.length || undefined },
     { id: "sharing", label: "Sharing" },
   ];
@@ -574,7 +715,7 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
             {/* Scrollable: tab content */}
             <div className={styles.dScroll}>
               {desktopTab === "ingredients" && renderIngredients()}
-              {desktopTab === "instructions" && renderInstructions()}
+              {desktopTab === "recipe" && renderRecipe()}
               {desktopTab === "tags" && renderTags()}
               {desktopTab === "sharing" && renderSharing()}
             </div>
@@ -618,9 +759,9 @@ export const MealFormModal: React.FC<MealFormModalProps> = ({ isOpen, onClose, i
               <div className={styles.mSlide} style={{ transform: `translateX(${(1 - mobileStep) * 100}%)` }}>
                 <div className={styles.mSlideInner}>{renderIngredients()}</div>
               </div>
-              {/* Step 2: Instructions */}
+              {/* Step 2: Recipe */}
               <div className={styles.mSlide} style={{ transform: `translateX(${(2 - mobileStep) * 100}%)` }}>
-                <div className={styles.mSlideInner}>{renderInstructions()}</div>
+                <div className={styles.mSlideInner}>{renderRecipe()}</div>
               </div>
               {/* Step 3: Tags */}
               <div className={styles.mSlide} style={{ transform: `translateX(${(3 - mobileStep) * 100}%)` }}>
